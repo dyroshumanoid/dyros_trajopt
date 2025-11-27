@@ -1,0 +1,101 @@
+digraph G {
+node [shape=box];
+"base_link" [label="base_link"];
+"L_HipRoll_Link_1" [label="L_HipRoll_Link_1"];
+"L_HipPitch_Link_1" [label="L_HipPitch_Link_1"];
+"L_Thigh_Link_1" [label="L_Thigh_Link_1"];
+"L_Knee_Link_1" [label="L_Knee_Link_1"];
+"L_AnkleRoll_Link_1" [label="L_AnkleRoll_Link_1"];
+"L_Foot_Link_1" [label="L_Foot_Link_1"];
+"R_HipRoll_Link_1" [label="R_HipRoll_Link_1"];
+"R_HipPitch_Link_1" [label="R_HipPitch_Link_1"];
+"R_Thigh_Link_1" [label="R_Thigh_Link_1"];
+"R_Knee_Link_1" [label="R_Knee_Link_1"];
+"R_AnkleRoll_Link_1" [label="R_AnkleRoll_Link_1"];
+"R_Foot_Link_1" [label="R_Foot_Link_1"];
+"WaistYaw_Link_1" [label="WaistYaw_Link_1"];
+"WaistRoll_Link_1" [label="WaistRoll_Link_1"];
+"Torso_1" [label="Torso_1"];
+"L_ShoulderPitch_Link_1" [label="L_ShoulderPitch_Link_1"];
+"L_ShoulderRoll_Link_1" [label="L_ShoulderRoll_Link_1"];
+"L_UpperArm_Link_1" [label="L_UpperArm_Link_1"];
+"L_Elbow_Link_1" [label="L_Elbow_Link_1"];
+"L_WristYaw_Link_1" [label="L_WristYaw_Link_1"];
+"L_WristPitch_Link_1" [label="L_WristPitch_Link_1"];
+"L_WristRoll_Link_1" [label="L_WristRoll_Link_1"];
+"NeckPitch_Link_1" [label="NeckPitch_Link_1"];
+"NeckRoll_Link_1" [label="NeckRoll_Link_1"];
+"Head_1" [label="Head_1"];
+"R_ShoulderPitch_Link_1" [label="R_ShoulderPitch_Link_1"];
+"R_ShoulderRoll_Link_1" [label="R_ShoulderRoll_Link_1"];
+"R_UpperArm_Link_1" [label="R_UpperArm_Link_1"];
+"R_Elbow_Link_1" [label="R_Elbow_Link_1"];
+"R_WristYaw_Link_1" [label="R_WristYaw_Link_1"];
+"R_WristPitch_Link_1" [label="R_WristPitch_Link_1"];
+"R_WristRoll_Link_1" [label="R_WristRoll_Link_1"];
+node [shape=ellipse, color=blue, fontcolor=blue];
+"base_link" -> "L_HipRoll_Joint" [label="xyz: -0.0075 0 0 \nrpy: 0 -0 0"]
+"L_HipRoll_Joint" -> "L_HipRoll_Link_1"
+"L_HipRoll_Link_1" -> "L_HipPitch_Joint" [label="xyz: 0.0075 0.071 0 \nrpy: 0 -0 0"]
+"L_HipPitch_Joint" -> "L_HipPitch_Link_1"
+"L_HipPitch_Link_1" -> "L_HipYaw_Joint" [label="xyz: 0 0.048 -0.195 \nrpy: 0 -0 0"]
+"L_HipYaw_Joint" -> "L_Thigh_Link_1"
+"L_Thigh_Link_1" -> "L_Knee_Joint" [label="xyz: -0.042753 0.0195 -0.205462 \nrpy: 0 -0 0"]
+"L_Knee_Joint" -> "L_Knee_Link_1"
+"L_Knee_Link_1" -> "L_AnklePitch_Joint" [label="xyz: 0.043642 -0.0415 -0.415855 \nrpy: 0 -0 0"]
+"L_AnklePitch_Joint" -> "L_AnkleRoll_Link_1"
+"L_AnkleRoll_Link_1" -> "L_AnkleRoll_Joint" [label="xyz: 0.011 0.0235 0 \nrpy: 0 -0 0"]
+"L_AnkleRoll_Joint" -> "L_Foot_Link_1"
+"base_link" -> "R_HipRoll_Joint" [label="xyz: 0.0075 0 0 \nrpy: 0 -0 0"]
+"R_HipRoll_Joint" -> "R_HipRoll_Link_1"
+"R_HipRoll_Link_1" -> "R_HipPitch_Joint" [label="xyz: -0.0075 -0.071 -0 \nrpy: 0 -0 0"]
+"R_HipPitch_Joint" -> "R_HipPitch_Link_1"
+"R_HipPitch_Link_1" -> "R_HipYaw_Joint" [label="xyz: 0 -0.048 -0.195 \nrpy: 0 -0 0"]
+"R_HipYaw_Joint" -> "R_Thigh_Link_1"
+"R_Thigh_Link_1" -> "R_Knee_Joint" [label="xyz: -0.042753 0.0195 -0.205462 \nrpy: 0 -0 0"]
+"R_Knee_Joint" -> "R_Knee_Link_1"
+"R_Knee_Link_1" -> "R_AnklePitch_Joint" [label="xyz: 0.043642 0.0025 -0.415855 \nrpy: 0 -0 0"]
+"R_AnklePitch_Joint" -> "R_AnkleRoll_Link_1"
+"R_AnkleRoll_Link_1" -> "R_AnkleRoll_Joint" [label="xyz: 0.011 -0.0235 0 \nrpy: 0 -0 0"]
+"R_AnkleRoll_Joint" -> "R_Foot_Link_1"
+"base_link" -> "WaistYaw_Joint" [label="xyz: 0 0 0.0955 \nrpy: 0 -0 0"]
+"WaistYaw_Joint" -> "WaistYaw_Link_1"
+"WaistYaw_Link_1" -> "WaistRoll_Joint" [label="xyz: 0.02 0 0.1435 \nrpy: 0 -0 0"]
+"WaistRoll_Joint" -> "WaistRoll_Link_1"
+"WaistRoll_Link_1" -> "WaistPitch_Joint" [label="xyz: -0.02 0.039 0 \nrpy: 0 -0 0"]
+"WaistPitch_Joint" -> "Torso_1"
+"Torso_1" -> "L_ShoulderPitch_Joint" [label="xyz: 0 0.1322 0.267 \nrpy: 0 -0 0"]
+"L_ShoulderPitch_Joint" -> "L_ShoulderPitch_Link_1"
+"L_ShoulderPitch_Link_1" -> "L_ShoulderRoll_Joint" [label="xyz: -0.045 0.0745 0 \nrpy: 0 -0 0"]
+"L_ShoulderRoll_Joint" -> "L_ShoulderRoll_Link_1"
+"L_ShoulderRoll_Link_1" -> "L_ShoulderYaw_Joint" [label="xyz: 0.039 0 -0.181 \nrpy: 0 -0 0"]
+"L_ShoulderYaw_Joint" -> "L_UpperArm_Link_1"
+"L_UpperArm_Link_1" -> "L_Elbow_Joint" [label="xyz: 0.025 0.041 -0.112 \nrpy: 0 -0 0"]
+"L_Elbow_Joint" -> "L_Elbow_Link_1"
+"L_Elbow_Link_1" -> "L_WristYaw_Joint" [label="xyz: -0.025 -0.041 -0.176 \nrpy: 0 -0 0"]
+"L_WristYaw_Joint" -> "L_WristYaw_Link_1"
+"L_WristYaw_Link_1" -> "L_WristPitch_Joint" [label="xyz: -0.007995 0.02 -0.185 \nrpy: 0 -0 0"]
+"L_WristPitch_Joint" -> "L_WristPitch_Link_1"
+"L_WristPitch_Link_1" -> "L_WristRoll_Joint" [label="xyz: -0.007 -0.02 0 \nrpy: 0 -0 0"]
+"L_WristRoll_Joint" -> "L_WristRoll_Link_1"
+"Torso_1" -> "NeckPitch_Joint" [label="xyz: 0.051 -0.007875 0.356 \nrpy: 0 -0 0"]
+"NeckPitch_Joint" -> "NeckPitch_Link_1"
+"NeckPitch_Link_1" -> "NeckYaw_Joint" [label="xyz: -0.051 -0.031425 -0.00985 \nrpy: 0 -0 0"]
+"NeckYaw_Joint" -> "NeckRoll_Link_1"
+"NeckRoll_Link_1" -> "NeckRoll_Joint" [label="xyz: 0.00285 0 0.09055 \nrpy: 0 -0 0"]
+"NeckRoll_Joint" -> "Head_1"
+"Torso_1" -> "R_ShoulderPitch_Joint" [label="xyz: 0 -0.2105 0.267 \nrpy: 0 -0 0"]
+"R_ShoulderPitch_Joint" -> "R_ShoulderPitch_Link_1"
+"R_ShoulderPitch_Link_1" -> "R_ShoulderRoll_Joint" [label="xyz: -0.039 -0.0745 0 \nrpy: 0 -0 0"]
+"R_ShoulderRoll_Joint" -> "R_ShoulderRoll_Link_1"
+"R_ShoulderRoll_Link_1" -> "R_ShoulderYaw_Joint" [label="xyz: 0.039 0 -0.181 \nrpy: 0 -0 0"]
+"R_ShoulderYaw_Joint" -> "R_UpperArm_Link_1"
+"R_UpperArm_Link_1" -> "R_Elbow_Joint" [label="xyz: 0.025 -0.041 -0.112 \nrpy: 0 -0 0"]
+"R_Elbow_Joint" -> "R_Elbow_Link_1"
+"R_Elbow_Link_1" -> "R_WristYaw_Joint" [label="xyz: -0.025 0.041 -0.176 \nrpy: 0 -0 0"]
+"R_WristYaw_Joint" -> "R_WristYaw_Link_1"
+"R_WristYaw_Link_1" -> "R_WristPitch_Joint" [label="xyz: -0.007995 -0.02 -0.185 \nrpy: 0 -0 0"]
+"R_WristPitch_Joint" -> "R_WristPitch_Link_1"
+"R_WristPitch_Link_1" -> "R_WristRoll_Joint" [label="xyz: 0.007 0.02 0 \nrpy: 0 -0 0"]
+"R_WristRoll_Joint" -> "R_WristRoll_Link_1"
+}

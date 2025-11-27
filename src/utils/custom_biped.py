@@ -54,79 +54,6 @@ class SimpleBipedGaitProblem:
         self.Rsurf = np.eye(3)
         self.foot_dim = np.array([0.3, 0.23])
 
-    # def createWalkingProblem(       
-    #     self, x0, stepLength, stepHeight, timeStep, stepKnots, supportKnots
-    # ):
-    #     """Create a shooting problem for a simple walking gait.
-
-    #     :param x0: initial state
-    #     :param stepLength: step length
-    #     :param stepHeight: step height
-    #     :param timeStep: step time for each knot
-    #     :param stepKnots: number of knots for step phases
-    #     :param supportKnots: number of knots for double support phases
-    #     :return shooting problem
-    #     """
-    #     # --- compute current foot & CoM references -----------------------------
-    #     q0 = x0[: self.state.nq]                                                # generalized-position slice
-    #     pinocchio.forwardKinematics(self.rmodel, self.rdata, q0)                # Forward Kinematics for q0
-    #     pinocchio.updateFramePlacements(self.rmodel, self.rdata)                # update frame SE3
-    #     rfPos0 = self.rdata.oMf[self.rfId].translation                          # right foot world position
-    #     lfPos0 = self.rdata.oMf[self.lfId].translation                          # left foot world position
-    #     comRef = (rfPos0 + lfPos0) / 2                                          # Use the horizontal center between the two feet as CoM reference point
-    #     comRef[2] = pinocchio.centerOfMass(self.rmodel, self.rdata, q0)[2]      # set z to real COM height
-        
-    #     # --- build list of action models --------------------------------------
-    #     loco3dModel = []                                                        # will store all knots                  
-        
-    #     # 1) double-support phase
-    #     doubleSupport = [
-    #         self.createSwingFootModel(timeStep, [self.rfId, self.lfId])
-    #         for _ in range(supportKnots)
-    #     ]
-        
-    #     # 2) right-foot step (half length on very first call)
-    #     if self.firstStep is True:
-    #         rStep = self.createFootstepModels(
-    #             comRef,
-    #             [rfPos0],
-    #             0.5 * stepLength,
-    #             stepHeight,
-    #             timeStep,
-    #             stepKnots,
-    #             [self.lfId],
-    #             [self.rfId],
-    #         )
-    #         self.firstStep = False
-    #     else:
-    #         rStep = self.createFootstepModels(
-    #             comRef,
-    #             [rfPos0],
-    #             stepLength,
-    #             stepHeight,
-    #             timeStep,
-    #             stepKnots,
-    #             [self.lfId],
-    #             [self.rfId],
-    #         )
-    
-    #     # 3) left-foot step (full length)
-    #     lStep = self.createFootstepModels(
-    #         comRef,
-    #         [lfPos0],
-    #         stepLength,
-    #         stepHeight,
-    #         timeStep,
-    #         stepKnots,
-    #         [self.rfId],
-    #         [self.lfId],
-    #     )
-    
-    #     # sequence: DS → R-swing → DS → L-swing
-    #     loco3dModel += doubleSupport + rStep
-    #     loco3dModel += doubleSupport + lStep
-    #     return crocoddyl.ShootingProblem(x0, loco3dModel[:-1], loco3dModel[-1])
-    
     def createWalkingProblem(       
         self, x0, stepX, stepY, stepYaw, stepHeight, timeStep, stepKnots, supportKnots
     ):
@@ -277,79 +204,6 @@ class SimpleBipedGaitProblem:
         loco3dModel += landed
         return crocoddyl.ShootingProblem(x0, loco3dModel[:-1], loco3dModel[-1])
 
-    # def createFootstepModels(
-    #     self,
-    #     comPos0,
-    #     feetPos0,
-    #     stepLength,
-    #     stepHeight,
-    #     timeStep,
-    #     numKnots,
-    #     supportFootIds,
-    #     swingFootIds,
-    # ):
-    #     """Action models for a footstep phase.
-
-    #     :param comPos0, initial CoM position
-    #     :param feetPos0: initial position of the swinging feet
-    #     :param stepLength: step length
-    #     :param stepHeight: step height
-    #     :param timeStep: time step
-    #     :param numKnots: number of knots for the footstep phase
-    #     :param supportFootIds: Ids of the supporting feet
-    #     :param swingFootIds: Ids of the swinging foot
-    #     :return footstep action models
-    #     """
-    #     numLegs = len(supportFootIds) + len(swingFootIds)
-    #     comPercentage = float(len(swingFootIds)) / numLegs
-    #     # Action models for the foot swing
-    #     footSwingModel = []
-    #     for k in range(numKnots):
-    #         swingFootTask = []
-    #         for i, p in zip(swingFootIds, feetPos0):
-    #             # Defining a foot swing task given the step length. The swing task
-    #             # is decomposed on two phases: swing-up and swing-down. We decide
-    #             # deliveratively to allocated the same number of nodes (i.e. phKnots)
-    #             # in each phase. With this, we define a proper z-component for the
-    #             # swing-leg motion.
-    #             phKnots = numKnots / 2
-    #             if k < phKnots:
-    #                 dp = np.array(
-    #                     [stepLength * (k + 1) / numKnots, 0.0, stepHeight * k / phKnots]
-    #                 )
-    #             elif k == phKnots:
-    #                 dp = np.array([stepLength * (k + 1) / numKnots, 0.0, stepHeight])
-    #             else:
-    #                 dp = np.array(
-    #                     [
-    #                         stepLength * (k + 1) / numKnots,
-    #                         0.0,
-    #                         stepHeight * (1 - float(k - phKnots) / phKnots),
-    #                     ]
-    #                 )
-    #             tref = p + dp
-    #             swingFootTask += [[i, pinocchio.SE3(np.eye(3), tref)]]
-    #         comTask = (
-    #             np.array([stepLength * (k + 1) / numKnots, 0.0, 0.0]) * comPercentage
-    #             + comPos0
-    #         )
-    #         footSwingModel += [
-    #             self.createSwingFootModel(
-    #                 timeStep,
-    #                 supportFootIds,
-    #                 comTask=comTask,
-    #                 swingFootTask=swingFootTask,
-    #             )
-    #         ]
-            
-    #     # Action model for the foot switch
-    #     footSwitchModel = self.createFootSwitchModel(swingFootIds, swingFootTask)
-    #     # Updating the current foot position for next step
-    #     comPos0 += [stepLength * comPercentage, 0.0, 0.0]
-    #     for p in feetPos0:
-    #         p += [stepLength, 0.0, 0.0]
-    #     return [*footSwingModel, footSwitchModel]
-
     def createFootstepModels(
         self,
         comPos0,
@@ -385,7 +239,7 @@ class SimpleBipedGaitProblem:
         for k in range(numKnots):
             swingFootTask = []
             for i, p, r in zip(swingFootIds, feetPos0, feetOri0):
-                phKnots = numKnots / 2
+                phKnots = numKnots // 2
                 if k < phKnots:
                     dz = stepHeight * k / phKnots
                 elif k == phKnots:
@@ -493,8 +347,7 @@ class SimpleBipedGaitProblem:
                     self.rmodel.frames[i[0]].name + "_footTrack", footTrack, 1e6
                 )
         stateWeights = np.array(
-            # [0] * 3 + [500.0] * 3 + [0.01] * (self.state.nv - 6) + [10] * self.state.nv
-            [0] * 2 + [1000.0] * 4 + [0.01] * (12) + [1000.0] * (self.state.nv - 18) + [10] * self.state.nv
+            [0] * 3 + [500.0] * 3 + [0.01] * (self.state.nv - 6) + [10] * self.state.nv
         )
         stateResidual = crocoddyl.ResidualModelState(
             self.state, self.rmodel.defaultState, nu

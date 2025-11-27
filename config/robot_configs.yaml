@@ -1,0 +1,35 @@
+tocabi:
+  urdf: "robots/tocabi/urdf/dyros_tocabi.urdf"
+  mesh: "robots/tocabi/meshes"
+  q0: [
+    0.0, 0.0, 0.0,  0, 0, 0, 1,
+    0.0, 0.0, -0.24, 0.6, -0.36, 0,
+    0.0, 0.0, -0.24, 0.6, -0.36, 0,
+    0.0, 0.0, 0.0,
+    0.261799, 0.174533, 1.396263, -1.221730, -0.785398, 0.0, 0.0, 0.0,
+    0.0, 0.0,
+   -0.261799, -0.174533, -1.396263, 1.221730, 0.785398, 0.0, 0.0, 0.0
+  ]
+  torso: "Pelvis_Link"
+  left_foot: "L_Foot_Link"
+  right_foot: "R_Foot_Link"
+  left_hand: "L_Wrist2_Link"
+  right_hand: "R_Wrist2_Link"
+
+p73:
+  urdf: "robots/p73/urdf/p73.urdf"
+  mesh: "robots/p73/meshes"
+  q0: [
+    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0,
+    0.0, +0.36, 0.0, +0.77, -0.41, 0,
+    0.0, -0.36, 0.0, -0.77, +0.41, 0,
+    0.0, 0.0, 0.0,
+    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+    0.0, 0.0, 0.0,
+    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0
+  ]
+  torso: "base_link"
+  left_foot: "L_Foot_Link_1"
+  right_foot: "R_Foot_Link_1"
+  left_hand: "L_WristRoll_Link_1"
+  right_hand: "R_WristRoll_Link_1"
