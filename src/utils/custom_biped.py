@@ -347,7 +347,8 @@ class SimpleBipedGaitProblem:
                     self.rmodel.frames[i[0]].name + "_footTrack", footTrack, 1e6
                 )
         stateWeights = np.array(
-            [0] * 3 + [500.0] * 3 + [0.01] * (self.state.nv - 6) + [10] * self.state.nv
+            # [0] * 3 + [500.0] * 3 + [0.01] * (self.state.nv - 6) + [10] * self.state.nv
+            [0] * 3 + [1000.0] * 3 + [0.01] * (12) + [1000.0] * (self.state.nv - 18) + [10] * self.state.nv
         )
         stateResidual = crocoddyl.ResidualModelState(
             self.state, self.rmodel.defaultState, nu
