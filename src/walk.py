@@ -1,16 +1,17 @@
 import os, time, numpy as np, pinocchio, crocoddyl, signal, sys
 import yaml
 from pinocchio.robot_wrapper import RobotWrapper
-from utils.custom_biped import SimpleBipedGaitProblem, plotSolution
 from crocoddyl import MeshcatDisplay
+from utils.custom_biped import SimpleBipedGaitProblem, plotSolution
 
 # -------------------- Runtime flags -----------------------------------------
 WITHDISPLAY = "display" in sys.argv or "CROCODDYL_DISPLAY" in os.environ
 WITHPLOT    = "plot"    in sys.argv or "CROCODDYL_PLOT"    in os.environ
+WITHSAVE    = "save"    in sys.argv or "CROCODDYL_SAVE"    in os.environ
 signal.signal(signal.SIGINT, signal.SIG_DFL)
 
 # -------------------- Paths --------------------------------------------------
-TIMESTEP  = 0.02
+TIMESTEP  = 0.01
 BASE_DIR  = os.path.dirname(os.path.abspath(__file__))
 CONFIG_PATH = os.path.join(BASE_DIR, "../config/robot_configs.yaml")
 
@@ -77,16 +78,16 @@ gait = SimpleBipedGaitProblem(model, rightFoot, leftFoot)
 GAITPHASES = [
     dict(
         walking=dict(
-            stepX        = 0.3,
+            stepX        = 0.05,
             stepY        = 0.0,
             stepYaw      = 0.0,
-            stepHeight   = 0.2,
+            stepHeight   = 0.05,
             timeStep     = TIMESTEP,
-            stepKnots    = 15,  # * TIMESTEP = SSP Duration
-            supportKnots = 5,  # * TIMESTEP = DSP Duration
+            stepKnots    = 60,  # * TIMESTEP = SSP Duration
+            supportKnots = 20,  # * TIMESTEP = DSP Duration
         )
     )
-    for _ in range(10)
+    for _ in range(3)
 ]
 
 # ----------------------------------------------------------
@@ -124,11 +125,12 @@ for phase in GAITPHASES:
 
     # Solve optimal control problem
     ddp.solve(xs, us, 100, False, 0.1)
-
-    solver.append(ddp)
-
-    # Use final state of this phase as initial state for the next one
-    x0 = ddp.xs[-1]
+                                             
+    solver.append(ddp)                                      # Stores the solved ddp solver in the list for later use.
+    
+    x0 = ddp.xs[-1]                                         # Updates x0 to be the final state of the current phase. 
+                                                            # This becomes the starting point for the next phase (to ensure continuity between motions).
+    
 
 # ----------------------------------------------------------
 # Visualization
@@ -145,7 +147,7 @@ if WITHDISPLAY:
             display.displayFromSolver(ddp)
 
 # ----------------------------------------------------------
-# PLOT
+# Plot
 if WITHPLOT:
     plotSolution(solver, bounds=False, figIndex=1, show=False)
     for i, ddp in enumerate(solver):
@@ -156,3 +158,48 @@ if WITHPLOT:
             figTitle=f"walking (phase {i})", figIndex=i + 3,
             show=(i == len(solver) - 1),
         )
+
+#----------------------------------------------------------
+# Save
+if WITHSAVE:
+    SAVE_DIR = "./walking_dataset"
+    os.makedirs(SAVE_DIR, exist_ok=True)
+
+    all_q = []   # joint positions (full q)
+    all_v = []   # joint velocities (full v)
+    all_u = []   # torques (actuated)
+
+    nu = model.nv - 6       
+    nv = model.nv
+    nq = model.nq
+
+    for ddp in solver:
+        T = len(ddp.us)      
+
+        for k in range(T):
+            x = ddp.xs[k]           
+            u = ddp.us[k]         
+
+            q = x[:nq].copy()
+            v = x[nq:].copy()
+            
+            if u.size == 0:
+                u_full = np.zeros(nu)
+            elif u.size == nu:
+                u_full = u.copy()
+            else:
+                raise RuntimeError(f"Unexpected control size: {u.size}, expected {nu}")
+            
+            all_q.append(q)
+            all_v.append(v)
+            all_u.append(u_full)
+
+    all_q = np.array(all_q)
+    all_v = np.array(all_v)
+    all_u = np.array(all_u)
+
+    np.savetxt(os.path.join(SAVE_DIR, "q_traj.txt"), all_q, fmt="%.6f")
+    np.savetxt(os.path.join(SAVE_DIR, "v_traj.txt"), all_v, fmt="%.6f")
+    np.savetxt(os.path.join(SAVE_DIR, "u_traj.txt"), all_u, fmt="%.6f")
+
+    print(f"[SAVE] Saved q, v, u trajectories to {SAVE_DIR}")

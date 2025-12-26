@@ -33,3 +33,36 @@ p73:
   right_foot: "R_Foot_Link_1"
   left_hand: "L_WristRoll_Link_1"
   right_hand: "R_WristRoll_Link_1"
+
+darwin:
+  urdf: "robots/darwin/urdf/darwin.urdf"
+  mesh: "robots/darwin/meshes"
+  q0: [
+    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0,
+    0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+    0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+    0.0, 0.0,
+    0.0, 0.0, 0.0, 0.0, 0.0, 
+    0.0, 0.0, 0.0, 0.0, 0.0
+  ]
+  torso: "base_link_to_body"
+  left_foot: "j_ankle2_l"
+  right_foot: "j_ankle2_r"
+  left_hand: "j_wrist_l"
+  right_hand: "j_wrist_r"
+
+simple_humanoid:
+  urdf: "robots/simple_humanoid/urdf/simple_humanoid.urdf"
+  mesh: "robots/simple_humanoid/meshes"   
+  q0: [
+    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0,
+    0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+    0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+    0.0, 0.0, 0.0, 
+    0.0, 0.0, 0.0,
+  ]
+  torso: "base_link"        
+  left_foot: "l_ankle"
+  right_foot: "r_ankle"
+  left_hand: "l_wrist"
+  right_hand: "r_wrist"

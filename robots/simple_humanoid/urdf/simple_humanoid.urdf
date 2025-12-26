@@ -37,7 +37,7 @@
     </collision>
     <collision name="box">
       <geometry>
-        <mesh filename="package://example-robot-data/robots/simple_humanoid_description/meshes/box.stl" />
+        <mesh filename="../meshes/box.stl" />
       </geometry>
     </collision>
     <collision_checking>
