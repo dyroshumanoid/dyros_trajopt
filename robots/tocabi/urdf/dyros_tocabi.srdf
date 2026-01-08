@@ -63,9 +63,9 @@
     <joint name="R_AnkleRoll_Joint"   value="0"/>
 
     <!-- Right arm -->
-    <joint name="R_Shoulder3_Joint"   value="0.17453"/>
-    <joint name="R_Shoulder2_Joint"   value="-0.1"/>
-    <joint name="R_Elbow_Joint"       value="-0.523599"/>
+    <joint name="R_Shoulder3_Joint"   value="-1.47"/>
+    <joint name="R_Armlink_Joint"   value="-1.57"/>
+    <joint name="R_Elbow_Joint"       value="-0.99"/>
 
     <!-- Left leg -->
     <joint name="L_HipRoll_Joint"     value="0"/>
@@ -76,9 +76,9 @@
     <joint name="L_AnkleRoll_Joint"   value="0"/>
 
     <!-- Left arm -->
-    <joint name="L_Shoulder3_Joint"   value="0.17453"/>
-    <joint name="L_Shoulder2_Joint"   value="0.1"/>
-    <joint name="L_Elbow_Joint"       value="-0.523599"/>
+    <joint name="L_Shoulder3_Joint"   value="1.47"/>
+    <joint name="L_Armlink_Joint"   value="1.57"/>
+    <joint name="L_Elbow_Joint"       value="0.99"/>
   </group_state>
 
 
@@ -95,9 +95,9 @@
     <joint name="R_AnkleRoll_Joint"   value="0"/>
 
     <!-- Right arm -->
-    <joint name="R_Shoulder3_Joint"   value="1.75"/>
-    <joint name="R_Shoulder2_Joint"   value="-0.1"/>
-    <joint name="R_Elbow_Joint"       value="0.0"/>
+    <joint name="R_Shoulder3_Joint"   value="1.47"/>
+    <joint name="R_Shoulder2_Joint"   value="1.18"/>
+    <joint name="R_Armlink_Joint"     value="-1.57"/>
 
     <!-- Left leg -->
     <joint name="L_HipRoll_Joint"     value="0"/>
@@ -108,9 +108,9 @@
     <joint name="L_AnkleRoll_Joint"   value="0"/>
 
     <!-- Left arm -->
-    <joint name="L_Shoulder3_Joint"   value="1.75"/>
-    <joint name="L_Shoulder2_Joint"   value="0.1"/>
-    <joint name="L_Elbow_Joint"       value="0.0"/>
+    <joint name="L_Shoulder3_Joint"   value="-1.47"/>
+    <joint name="L_Shoulder2_Joint"   value="-1.18"/>
+    <joint name="L_Armlink_Joint"     value="1.57"/>
   </group_state>
 
 
@@ -127,9 +127,10 @@
     <joint name="R_AnkleRoll_Joint"   value="0"/>
 
     <!-- Right arm -->
-    <joint name="R_Shoulder3_Joint"   value="-2.7"/>
-    <joint name="R_Shoulder2_Joint"   value="-0.1"/>
+    <joint name="R_Shoulder3_Joint"   value="-1.47"/>
+    <joint name="R_Shoulder2_Joint"   value="2.7"/>
     <joint name="R_Elbow_Joint"       value="-0.523599"/>
+    <joint name="R_Armlink_Joint"       value="-1.57"/>
 
     <!-- Left leg -->
     <joint name="L_HipRoll_Joint"     value="0"/>
@@ -140,9 +141,11 @@
     <joint name="L_AnkleRoll_Joint"   value="0"/>
 
     <!-- Left arm -->
-    <joint name="L_Shoulder3_Joint"   value="-2.7"/>
-    <joint name="L_Shoulder2_Joint"   value="0.1"/>
-    <joint name="L_Elbow_Joint"       value="-0.523599"/>
+    <joint name="L_Shoulder3_Joint"   value="1.47"/>
+    <joint name="L_Shoulder2_Joint"   value="-2.7"/>
+    <joint name="L_Elbow_Joint"       value="0.523599"/>
+    <joint name="L_Armlink_Joint"       value="1.57"/>
+
   </group_state>
 
 
@@ -159,9 +162,10 @@
     <joint name="R_AnkleRoll_Joint"   value="0"/>
 
     <!-- Right arm -->
-    <joint name="R_Shoulder3_Joint"   value="0.0"/>
-    <joint name="R_Shoulder2_Joint"   value="-0.1"/>
+    <joint name="R_Shoulder3_Joint"   value="-1.47"/>
+    <joint name="R_Shoulder2_Joint"   value="0.0"/>
     <joint name="R_Elbow_Joint"       value="-1.8"/>
+    <joint name="R_Armlink_Joint"     value="-1.57"/>
 
     <!-- Left leg -->
     <joint name="L_HipRoll_Joint"     value="0"/>
@@ -172,15 +176,17 @@
     <joint name="L_AnkleRoll_Joint"   value="0"/>
 
     <!-- Left arm -->
-    <joint name="L_Shoulder3_Joint"   value="0.0"/>
-    <joint name="L_Shoulder2_Joint"   value="0.1"/>
-    <joint name="L_Elbow_Joint"       value="-1.8"/>
+    <joint name="L_Shoulder3_Joint"   value="+1.47"/>
+    <joint name="L_Shoulder2_Joint"   value="0.0"/>
+    <joint name="L_Elbow_Joint"       value="1.8"/>
+    <joint name="L_Armlink_Joint"     value="1.57"/>
+
   </group_state>
 
 
   <!-- =============== flying_land =================== -->
   <group_state name="flying_land" group="all">
-    <joint name="root_joint" value="0.342678173 0.0 0.648216171 0 0.6803454 0 0.7328917"/>
+    <joint name="root_joint" value="0.342678173 0.0 0.90216171 0 0.6803454 0 0.7328917"/>
 
     <!-- Right leg -->
     <joint name="R_HipRoll_Joint"     value="0"/>
@@ -191,9 +197,10 @@
     <joint name="R_AnkleRoll_Joint"   value="0"/>
 
     <!-- Right arm -->
-    <joint name="R_Shoulder3_Joint"   value="0.17453"/>
-    <joint name="R_Shoulder2_Joint"   value="-0.1"/>
+    <joint name="R_Shoulder3_Joint"   value="-1.47"/>
+    <joint name="R_Shoulder2_Joint"   value="-0.17453"/>
     <joint name="R_Elbow_Joint"       value="-0.523599"/>
+    <joint name="R_Armlink_Joint"     value="-1.57"/>
 
     <!-- Left leg -->
     <joint name="L_HipRoll_Joint"     value="0"/>
@@ -204,9 +211,10 @@
     <joint name="L_AnkleRoll_Joint"   value="0"/>
 
     <!-- Left arm -->
-    <joint name="L_Shoulder3_Joint"   value="0.17453"/>
-    <joint name="L_Shoulder2_Joint"   value="0.1"/>
-    <joint name="L_Elbow_Joint"       value="-0.523599"/>
+    <joint name="L_Shoulder3_Joint"   value="1.47"/>
+    <joint name="L_Shoulder2_Joint"   value="0.17453"/>
+    <joint name="L_Elbow_Joint"       value="0.523599"/>
+    <joint name="L_Armlink_Joint"     value="1.57"/>
   </group_state>
 
 </robot>

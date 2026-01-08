@@ -12,6 +12,7 @@ from pinocchio.robot_wrapper import RobotWrapper
 from crocoddyl import MeshcatDisplay
 
 from utils.backflip_util import BackflipProblem
+from utils.analysis_util import save_and_plot_robot_data
 
 # -------------------- Runtime flags -----------------------------------------
 WITHDISPLAY = "display" in sys.argv or "CROCODDYL_DISPLAY" in os.environ
@@ -23,10 +24,19 @@ signal.signal(signal.SIGINT, signal.SIG_DFL)
 TIMESTEP   = 0.01
 BASE_DIR   = os.path.dirname(os.path.abspath(__file__))
 CONFIG_PATH = os.path.join(BASE_DIR, "../config/robot_configs.yaml")
+WEIGHT_PATH = os.path.join(BASE_DIR, "../config/robot_weights.yaml")
 
 # -------------------- Load robot config -------------------------------------
 with open(CONFIG_PATH, "r") as f:
     robots = yaml.safe_load(f)
+
+if os.path.isfile(WEIGHT_PATH):
+    with open(WEIGHT_PATH, "r") as f:
+        all_weights = yaml.safe_load(f)
+    print(f"[backflip] Loaded robot weights from: {WEIGHT_PATH}")
+else:
+    all_weights = {}
+    print(f"[backflip][WARN] Weight file not found at {WEIGHT_PATH}, using defaults")
 
 # default: simple_humanoid
 robot_name = sys.argv[1] if len(sys.argv) > 1 else "simple_humanoid"
@@ -93,6 +103,8 @@ base_frame_name   = robot_cfg.get("torso", "base_link")
 left_foot_name    = robot_cfg["left_foot"]
 right_foot_name   = robot_cfg["right_foot"]
 
+current_robot_weights = all_weights.get(robot_name, {})
+
 print("========== Backflip Frames ==========")
 print("Base frame   :", base_frame_name)
 print("Left  foot   :", left_foot_name)
@@ -105,6 +117,7 @@ backflip = BackflipProblem(
     lf_contact_frame_name=left_foot_name,
     integrator="rk4",
     control="zero",
+    weights=current_robot_weights
 )
 
 # ============================================================================
@@ -136,6 +149,9 @@ joint_vel_limit = np.pi * 2 * 10 * np.ones(model.nv - 6)
 joint_vel_lb = -joint_vel_limit
 joint_vel_ub =  joint_vel_limit
 
+# # Joint torque bounds
+# model.effortLimit *= 10.0
+
 # Concatenate into full state bounds [pos, quat, joint_pos, lin_vel, ang_vel, joint_vel]
 x_lb = np.concatenate(
     [pos_lb, quat_lb, joint_pos_lb, lin_vel_lb, ang_vel_lb, joint_vel_lb]
@@ -153,7 +169,7 @@ assert x_ub.size == nx, f"[backflip] x_ub size {x_ub.size} != nx {nx}"
 # ============================================================================
 
 g = 9.81
-jump_height = 0.5  # [m] apex height (same as code2)
+jump_height = 0.4  # [m] apex height (same as code2)
 T = np.sqrt(2.0 * jump_height / g)
 num_flying_knots = int((2.0 * T / TIMESTEP - 1) / 2)
 v_liftoff = np.sqrt(2.0 * g * jump_height)
@@ -173,9 +189,9 @@ BACKFLIP_STAGES = [
     dict(
         name="second_stage",
         kind="second",
-        jump_length=[-0.5, 0.0, 0.0],    # continue backward travel
+        jump_length=[-0.4, 0.0, 0.0],    # continue backward travel
         dt=TIMESTEP,
-        num_ground_knots=35,
+        num_ground_knots=40,
         num_flying_knots=num_flying_knots,
     ),
 ]
@@ -267,6 +283,19 @@ print("\n========== Backflip optimization done ==========")
 print("Total knots:", x_traj.shape[0])
 print("x_traj shape:", x_traj.shape)
 print("u_traj shape:", u_traj.shape)
+
+
+# ---------------------------------------------------------------
+if WITHPLOT:
+    print(f"\n[Analysis] Plotting data for {robot_name}...")
+    save_and_plot_robot_data(
+        model=model,
+        xs=x_traj,
+        us=u_traj,
+        dt=TIMESTEP,
+        robot_name=robot_name
+    )
+
 
 # -------------------- Optional: save trajectory -----------------------------
 if WITHSAVE:

@@ -1,3 +1,4 @@
+#x축 방향 가중치 더한것 - simple 작동
 import numpy as np
 import pinocchio
 import crocoddyl
@@ -14,6 +15,7 @@ class BackflipProblem:
         lf_contact_frame_name: str,
         integrator: str = "rk4",
         control: str = "zero",
+        weights: Dict= None,
     ):
         """
         Construct a backflip problem.
@@ -28,6 +30,7 @@ class BackflipProblem:
         :param integrator: Type of the integrator ('euler', 'rk4', 'rk3', 'rk2').
         :param control: Type of control parametrization ('zero', 'one', 'rk4', 'rk3').
         """
+        self.w= weights if weights else {}
         self.robot_model = robot_model
         self.robot_data = robot_model.createData()
         self.state = crocoddyl.StateMultibody(self.robot_model)
@@ -85,6 +88,8 @@ class BackflipProblem:
             + [100.0] * 3  # base angular velocity residual
             + [100.0] * (self.robot_model.nv - 6)  # joint velocity residual
         )
+
+        
 
     def create_backflip_problem_first_stage(
         self,
@@ -146,12 +151,12 @@ class BackflipProblem:
         # ---------------------------------------------------------------------------- #
         # Control the robot to track the default flying-ready joint configuration
         x_track_weights_ready = np.array(
-            [0.0, 100.0, 0.0]  # x, y, z
-            + [100.0, 0.0, 100.0]  # axis-angle residual rotation s.t. R = R_ref * r
-            + [50.0] * (self.state.nv - 6)  # joint positions
-            + [25.0, 100.0, 0.0]  # base linear velocities
-            + [100.0, 0.0, 100.0]  # base angular velocities
-            + [1.0] * (self.state.nv - 6)  # joint velocities
+            self.w.get("ready_base_pos", [0.0, 100.0, 0.0])   # x, y, z
+            + self.w.get("ready_base_rot", [100.0, 0.0, 100.0])  # axis-angle residual rotation s.t. R = R_ref * r
+            + self.w.get("ready_joint", [50.0]) * (self.state.nv - 6)  # joint positions
+            + self.w.get("ready_base_v", [25.0, 100.0, 0.0])  # base linear velocities
+            + self.w.get("ready_base_w", [100.0, 0.0, 100.0])  # base angular velocities
+            + self.w.get("ready_joint_v", [1.0])* (self.state.nv - 6)  # joint velocities
         )
         x_ref_traj_ready = self.state_interp(x0, self.x_flying_ready, num_ground_knots)
         ready = [
@@ -174,12 +179,12 @@ class BackflipProblem:
             foot_poses_ref=foot_poses_ref_0,
             x_ref=self.x_flying_ready,
             x_track_weights=np.array(
-                [25.0, 100.0, 0.0]  # x, y, z
-                + [100.0, 0.0, 100.0]  # axis-angle residual rotation s.t. R = R_ref * r
-                + [75.0] * (self.state.nv - 6)  # joint positions
-                + [0.0, 100.0, 0.0]  # base linear velocities
-                + [100.0, 0.0, 100.0]  # base angular velocities
-                + [0.0] * (self.state.nv - 6)  # joint velocities
+                self.w.get("ready_terminal_base_pos", [25.0, 100.0, 0.0])   # x, y, z
+                + self.w.get("ready_terminal_base_rot", [100.0, 0.0, 100.0])  # axis-angle residual rotation s.t. R = R_ref * r
+                + self.w.get("ready_terminal_joint", [75.0]) * (self.state.nv - 6)  # joint positions
+                + self.w.get("ready_terminal_base_v", [0.0, 100.0, 0.0])  # base linear velocities
+                + self.w.get("ready_terminal_ase_w", [100.0, 0.0, 100.0])  # base angular velocities
+                + self.w.get("ready_terminal_joint_v", [0.0])* (self.state.nv - 6)  # joint velocities
             ),
             x_track_cost_weight=1e6,
             x_lb=x_lb,
@@ -192,12 +197,12 @@ class BackflipProblem:
         # ---------------------------------------------------------------------------- #
         # Control the robot to track the default flying-ready joint configuration
         x_track_weights_takeoff = np.array(
-            [25.0, 100.0, 0.0]  # x, y, z
-            + [100.0, 0.0, 100.0]  # axis-angle residual rotation s.t. R = R_ref * r
-            + [50.0] * (self.state.nv - 6)  # joint positions
-            + [25.0, 100.0, 10.0]  # base linear velocities
-            + [100.0, 0.0, 100.0]  # base angular velocities
-            + [0.0] * (self.state.nv - 6)  # joint velocities
+            self.w.get("takeoff_base_pos", [25.0, 100.0, 0.0])   # x, y, z
+            + self.w.get("takeoff_base_rot", [100.0, 0.0, 100.0])  # axis-angle residual rotation s.t. R = R_ref * r
+            + self.w.get("takeoff_joint", [50.0]) * (self.state.nv - 6)  # joint positions
+            + self.w.get("takeoff_base_v", [25.0, 100.0, 0.0])  # base linear velocities
+            + self.w.get("takeoff_base_w", [100.0, 0.0, 100.0])  # base angular velocities
+            + self.w.get("takeoff_joint_v", [0.0])* (self.state.nv - 6)  # joint velocities
         )
         self.x_flying_takeoff[self.robot_model.nq : self.robot_model.nq + 3] = np.array(
             [0.0, 0.0, v_liftoff]
@@ -225,12 +230,12 @@ class BackflipProblem:
             foot_poses_ref=foot_poses_ref_0,
             x_ref=self.x_flying_takeoff,
             x_track_weights=np.array(
-                [25.0, 100.0, 100.0]  # x, y, z
-                + [100.0, 0.0, 100.0]  # axis-angle residual rotation s.t. R = R_ref * r
-                + [50.0] * (self.state.nv - 6)  # joint positions
-                + [0.0, 0.0, 200.0]  # base linear velocities
-                + [100.0, 0.0, 100.0]  # base angular velocities
-                + [0.0] * (self.state.nv - 6)  # joint velocities
+                self.w.get("takeoff_terminal_base_pos", [25.0, 100.0, 100.0])   # x, y, z
+                + self.w.get("takeoff_terminal_base_rot", [100.0, 0.0, 100.0])  # axis-angle residual rotation s.t. R = R_ref * r
+                + self.w.get("takeoff_terminal_joint", [50.0]) * (self.state.nv - 6)  # joint positions
+                + self.w.get("takeoff_terminal_base_v", [0.0, 0.0, 200.0])  # base linear velocities
+                + self.w.get("takeoff_terminal_base_w", [100.0, 0.0, 100.0])  # base angular velocities
+                + self.w.get("takeoff_terminal_joint_v", [0.0])* (self.state.nv - 6)  # joint velocities
             ),
             x_track_cost_weight=1e6,
             x_lb=x_lb,
@@ -284,12 +289,12 @@ class BackflipProblem:
 
         # Create knot action models
         x_track_weights_flyup = np.array(
-            [0.0, 100.0, 0.0]  # x, y, z
-            + [100.0, 10.0, 100.0]  # axis-angle residual rotation s.t. R = R_ref * r
-            + [75.0] * (self.state.nv - 6)  # joint positions
-            + [0.0, 100.0, 0.0]  # base linear velocities
-            + [100.0, 100.0, 100.0]  # base angular velocities
-            + [0.5] * (self.state.nv - 6)  # joint velocities
+            self.w.get("flyup_base_pos", [10.0, 100.0, 0.0])   # x, y, z
+            + self.w.get("flyup_base_rot", [100.0, 10.0, 100.0])  # axis-angle residual rotation s.t. R = R_ref * r
+            + self.w.get("flyup_joint", [75.0]) * (self.state.nv - 6)  # joint positions
+            + self.w.get("flyup_base_v", [0.0, 100.0, 0.0])  # base linear velocities
+            + self.w.get("flyup_base_w", [100.0, 100.0, 100.0])  # base angular velocities
+            + self.w.get("flyup_joint_v", [0.5])* (self.state.nv - 6)  # joint velocities
         )
         fly_up = [
             self.create_knot_action_model(
@@ -311,12 +316,12 @@ class BackflipProblem:
             foot_poses_ref=None,
             x_ref=x_ref_traj_flyup[-1],
             x_track_weights=np.array(
-                [0.0, 100.0, 50.0]  # x, y, z
-                + [100.0] * 3  # axis-angle residual rotation s.t. R = R_ref * r
-                + [100.0] * (self.state.nv - 6)  # joint positions
-                + [0.0, 100.0, 50.0]  # base linear velocities
-                + [100.0, 100.0, 100.0]  # base angular velocities
-                + [0.0] * (self.state.nv - 6)  # joint velocities
+                self.w.get("flyup_terminal_base_pos", [10.0, 100.0, 0.0])   # x, y, z
+                + self.w.get("flyup_terminal_base_rot", [100.0, 100.0, 100.0])  # axis-angle residual rotation s.t. R = R_ref * r
+                + self.w.get("flyup_terminal_joint", [100.0]) * (self.state.nv - 6)  # joint positions
+                + self.w.get("flyup_terminal_base_v", [0.0, 100.0, 50.0])  # base linear velocities
+                + self.w.get("flyup_terminal_base_w", [100.0, 100.0, 100.0])  # base angular velocities
+                + self.w.get("flyup_terminal_joint_v", [0.0])* (self.state.nv - 6)  # joint velocities
             ),
             x_track_cost_weight=1e6,
             x_lb=x_lb,
@@ -372,12 +377,13 @@ class BackflipProblem:
         # Flying-Down Phase ---------------------------------------------------------- #
         # ---------------------------------------------------------------------------- #
         # Control the robot to track a whole-body state reference trajectory
+        landing_x=jump_length[0]
         foot_poses_ref_final = {
             self.lf_contact_frame_id: pinocchio.SE3(
-                np.eye(3), np.array([0.48, 0.09, 0.0])
+                np.eye(3), np.array([landing_x, 0.09, 0.0])
             ),
             self.rf_contact_frame_id: pinocchio.SE3(
-                np.eye(3), np.array([0.48, -0.09, 0.0])
+                np.eye(3), np.array([landing_x, -0.09, 0.0])
             ),
         }
 
@@ -417,12 +423,12 @@ class BackflipProblem:
 
         # Create knot action models
         x_track_weights_flydown = np.array(
-            [0.0, 0.0, 0.0]  # x, y, z
-            + [0.0, 0.0, 0.0]  # axis-angle residual rotation s.t. R = R_ref * r
-            + [100.0] * (self.state.nv - 6)  # joint positions
-            + [0.0, 0.0, 0.0]  # base linear velocities
-            + [0.0, 0.0, 0.0]  # base angular velocities
-            + [0.1] * (self.state.nv - 6)  # joint velocities
+            self.w.get("flydown_base_pos", [30.0, 0.0, 0.0])   # x, y, z
+            + self.w.get("flydown_base_rot", [10.0, 10.0, 10.0])  # axis-angle residual rotation s.t. R = R_ref * r
+            + self.w.get("flydown_joint", [120.0]) * (self.state.nv - 6)  # joint positions
+            + self.w.get("flydown_base_v", [0.0, 0.0, 0.0])  # base linear velocities
+            + self.w.get("flydown_base_w", [0.0, 0.0, 0.0])  # base angular velocities
+            + self.w.get("flydown_joint_v", [0.1])* (self.state.nv - 6)  # joint velocities
         )
         fly_down = [
             self.create_knot_action_model(
@@ -446,15 +452,15 @@ class BackflipProblem:
             foot_poses_track_cost_weight=1e8,
             x_ref=x_ref_traj_flydown[-1],
             x_track_weights=np.array(
-                [0.0, 0.0, 0.0]  # x, y, z
-                + [0.0] * 3  # axis-angle residual rotation s.t. R = R_ref * r
-                + [100.0] * (self.state.nv - 6)  # joint positions
-                + [0.0, 0.0, 0.0]  # base linear velocities
-                + [0.0, 0.0, 0.0]  # base angular velocities
-                + [0.0] * (self.state.nv - 6)  # joint velocities
+                self.w.get("flydown_terminal_base_pos", [80.0, 0.0, 100.0])   # x, y, z
+                + self.w.get("flydown_terminal_base_rot", [10.0, 10.0, 10.0])  # axis-angle residual rotation s.t. R = R_ref * r
+                + self.w.get("flydown_terminal_joint", [120.0]) * (self.state.nv - 6)  # joint positions
+                + self.w.get("flydown_terminal_base_v", [0.0, 0.0, 0.0])  # base linear velocities
+                + self.w.get("flydown_terminal_base_w", [0.0, 0.0, 0.0])  # base angular velocities
+                + self.w.get("flydown_terminal_joint_v", [0.0])* (self.state.nv - 6)  # joint velocities
             ),
             x_track_cost_weight=1e6,
-            x_lb=x_lb,
+            x_lb=x_lb, 
             x_ub=x_ub,
             x_bounds_cost_weight=1e12,
         )
@@ -470,19 +476,19 @@ class BackflipProblem:
                 foot_poses_track_cost_weight=1e6,
                 x_ref=x_ref_traj_flydown[-1],
                 x_track_weights=np.array(
-                    [0.0, 0.0, 0.0]  # x, y, z
-                    + [0.0] * 3  # axis-angle residual rotation s.t. R = R_ref * r
-                    + [100.0] * (self.state.nv - 6)  # joint positions
-                    + [0.0, 0.0, 0.0]  # base linear velocities
-                    + [0.0, 0.0, 0.0]  # base angular velocities
-                    + [0.0] * (self.state.nv - 6)  # joint velocities
+                    self.w.get("landing_base_pos", [0.0, 0.0, 0.0])   # x, y, z
+                    + self.w.get("landing_base_rot", [10.0, 10.0, 10.0])  # axis-angle residual rotation s.t. R = R_ref * r
+                    + self.w.get("landing_joint", [120.0]) * (self.state.nv - 6)  # joint positions
+                    + self.w.get("landing_base_v", [0.0, 0.0, 0.0])  # base linear velocities
+                    + self.w.get("landing_base_w", [0.0, 0.0, 0.0])  # base angular velocities
+                    + self.w.get("landing_joint_v", [0.0])* (self.state.nv - 6)  # joint velociti
                 ),
                 x_track_cost_weight=1e3,
             )
         ]
 
         # During the landed phase, control the robot to track the final base pose reference
-        x_ref_final = np.concatenate([np.array([0.48, 0.0]), self.x_ground[2:]])
+        x_ref_final = np.concatenate([np.array([landing_x, 0.0]), self.x_ground[2:]])
         landed = [
             self.create_knot_action_model(
                 dt,
@@ -490,12 +496,12 @@ class BackflipProblem:
                 foot_poses_ref=foot_poses_ref_final,
                 x_ref=x_ref_final,
                 x_track_weights=np.array(
-                    [0.0, 0.0, 0.0]  # x, y, z
-                    + [0.0] * 3  # axis-angle residual rotation s.t. R = R_ref * r
-                    + [100.0] * (self.state.nv - 6)  # joint positions
-                    + [0.0, 0.0, 0.0]  # base linear velocities
-                    + [0.0, 0.0, 0.0]  # base angular velocities
-                    + [5.0] * (self.state.nv - 6)  # joint velocities
+                    self.w.get("landed_base_pos", [120.0, 120.0, 120.0])   # x, y, z
+                    + self.w.get("landed_base_rot", [50.0, 50.0, 50.0])  # axis-angle residual rotation s.t. R = R_ref * r
+                    + self.w.get("landed_joint", [100.0]) * (self.state.nv - 6)  # joint positions
+                    + self.w.get("landed_base_v", [0.0, 0.0, 0.0])  # base linear velocities
+                    + self.w.get("landed_base_w", [0.0, 0.0, 0.0])  # base angular velocities
+                    + self.w.get("landed_joint_v", [5.0])* (self.state.nv - 6)  # joint velociti
                 ),
                 x_track_cost_weight=1e3,
             )
