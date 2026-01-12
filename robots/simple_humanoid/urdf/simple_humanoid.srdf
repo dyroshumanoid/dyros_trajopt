@@ -141,6 +141,32 @@
     <joint name="LARM_ELBOW"      value="-1.8" />
   </group_state>
 
+  <group_state name="flying_land" group="all">
+    <joint name="root_joint"      value="0.342678173 0.0 0.648216171 0 0.6803454 0 0.7328917" />
+
+    <joint name="RLEG_HIP_R"      value="0" />
+    <joint name="RLEG_HIP_P"      value="-2.0" />
+    <joint name="RLEG_HIP_Y"      value="0" />
+    <joint name="RLEG_KNEE"       value="0.75" />
+    <joint name="RLEG_ANKLE_P"    value="-0.3" />
+    <joint name="RLEG_ANKLE_R"    value="0" />
+
+    <joint name="RARM_SHOULDER_P" value="0.17453" />
+    <joint name="RARM_SHOULDER_R" value="-0.1" />
+    <joint name="RARM_ELBOW"      value="-0.523599" />
+
+    <joint name="LLEG_HIP_R"      value="0" />
+    <joint name="LLEG_HIP_P"      value="-2.0" />
+    <joint name="LLEG_HIP_Y"      value="0" />
+    <joint name="LLEG_KNEE"       value="0.75" />
+    <joint name="LLEG_ANKLE_P"    value="-0.3" />
+    <joint name="LLEG_ANKLE_R"    value="0" />
+
+    <joint name="LARM_SHOULDER_P" value="0.17453" />
+    <joint name="LARM_SHOULDER_R" value="0.1" />
+    <joint name="LARM_ELBOW"      value="-0.523599" />
+  </group_state>
+  
   <group_state name="side_sitting" group="all">
     <joint name="root_joint"      value="0 0 0.85478727 0 0 0 1" />
 
@@ -169,7 +195,7 @@
 
 
   <group_state name="side_takeoff" group="all">
-    <joint name="root_joint"      value="0 0 0.95478727 -0.2588 0 0 0.9659" />
+    <joint name="root_joint"      value="0 0 0.95478727 0.2588 0 0 0.9659" />
 
     <joint name="RLEG_HIP_R"      value="0.02" />
     <joint name="RLEG_HIP_P"      value="-0.73" />
@@ -191,38 +217,11 @@
     <joint name="RARM_SHOULDER_R" value="-0.15" />
     <joint name="RARM_ELBOW"      value="-0.45" />
 
-    <joint name="LARM_SHOULDER_P" value="0.22" />
+    <joint name="LARM_SHOULDER_P" value="-0.22" />
     <joint name="LARM_SHOULDER_R" value="0.15" />
     <joint name="LARM_ELBOW"      value="-0.45" />
   </group_state>
 
-  <group_state name="side_pre_takeoff" group="mapURDFToOpenHRP">
-    <joint name="root_joint" value="0 0 0.85478727  0 0 0 1" />
-
-    <!-- keep legs almost same as side_sitting -->
-    <joint name="RLEG_HIP_R"   value="0" />
-    <joint name="RLEG_HIP_P"   value="-0.46" />
-    <joint name="RLEG_HIP_Y"   value="0" />
-    <joint name="RLEG_KNEE"    value="0.772665" />
-    <joint name="RLEG_ANKLE_P" value="-0.248879" />
-    <joint name="RLEG_ANKLE_R" value="0" />
-
-    <joint name="LLEG_HIP_R"   value="0" />
-    <joint name="LLEG_HIP_P"   value="-0.46" />
-    <joint name="LLEG_HIP_Y"   value="0" />
-    <joint name="LLEG_KNEE"    value="0.772665" />
-    <joint name="LLEG_ANKLE_P" value="-0.248879" />
-    <joint name="LLEG_ANKLE_R" value="0" />
-
-    <!-- arms: move toward takeoff setting (left tuck, right open) -->
-    <joint name="RARM_SHOULDER_P" value="-0.15" />
-    <joint name="RARM_SHOULDER_R" value="-0.08" />
-    <joint name="RARM_ELBOW"      value="-1.75" />
-
-    <joint name="LARM_SHOULDER_P" value="-0.15" />
-    <joint name="LARM_SHOULDER_R" value="-0.08" />
-    <joint name="LARM_ELBOW"      value="-1.75" />
-  </group_state>
 
   <group_state name="side_flying" group="all">
     <joint name="root_joint"      value="0 0 1.05478727 -0.7071 0 0 0.7071" />
@@ -276,31 +275,6 @@
     <joint name="LARM_ELBOW"      value="-2.19" />
   </group_state>
 
-  <group_state name="side_untuck" group="all">
-    <joint name="root_joint"      value="0 0 0.85478727 -0.7071 0 0 -0.7071" />
-
-    <joint name="RLEG_HIP_R"      value="0.01" />
-    <joint name="RLEG_HIP_P"      value="-1.20" />
-    <joint name="RLEG_HIP_Y"      value="0.0" />
-    <joint name="RLEG_KNEE"       value="1.55" />
-    <joint name="RLEG_ANKLE_P"    value="-0.10" />
-    <joint name="RLEG_ANKLE_R"    value="0" />
-
-    <joint name="LLEG_HIP_R"      value="-0.01" />
-    <joint name="LLEG_HIP_P"      value="-1.20" />
-    <joint name="LLEG_HIP_Y"      value="0.0" />
-    <joint name="LLEG_KNEE"       value="1.55" />
-    <joint name="LLEG_ANKLE_P"    value="-0.10" />
-    <joint name="LLEG_ANKLE_R"    value="0" />
-
-    <joint name="RARM_SHOULDER_P" value="0.15" />
-    <joint name="RARM_SHOULDER_R" value="0.02" />
-    <joint name="RARM_ELBOW"      value="-1.60" />
-
-    <joint name="LARM_SHOULDER_P" value="0.15" />
-    <joint name="LARM_SHOULDER_R" value="-0.02" />
-    <joint name="LARM_ELBOW"      value="-1.60" />
-  </group_state>
 
   <group_state name="side_landing" group="all">
     <joint name="root_joint"      value="0 0 0.65 0 0 0 1" />

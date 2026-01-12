@@ -1,4 +1,3 @@
-#x축 방향 가중치 더한것 - simple 작동
 import numpy as np
 import pinocchio
 import crocoddyl

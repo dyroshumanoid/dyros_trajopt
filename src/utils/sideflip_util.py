@@ -46,42 +46,36 @@ class SideflipProblem:
         self.lf_contact_frame_id = self.robot_model.getFrameId(lf_contact_frame_name)
         self.rf_contact_frame_id = self.robot_model.getFrameId(rf_contact_frame_name)
 
-        # Must-have postures
-        required = [
-            "side_sitting",
-            "side_takeoff",
-            "side_flying",
-            "side_inverse",
-            "side_landing",
-        ]
-        missing = [k for k in required if k not in self.robot_model.referenceConfigurations]
-        if missing:
-            avail = list(self.robot_model.referenceConfigurations.keys())
-            raise KeyError(
-                f"[SideflipProblem] Missing referenceConfigurations: {missing}\n"
-                f"Available keys: {avail}"
-            )
-
-        # Default states (x = [q, v])
+        # Default states
         self.x_ground = np.concatenate(
-            [self.robot_model.referenceConfigurations["side_sitting"].copy(),
-             np.zeros(self.robot_model.nv)]
+            [
+                self.robot_model.referenceConfigurations["side_sitting"].copy(),
+                np.zeros(self.robot_model.nv)
+            ]
         )
         self.x_takeoff = np.concatenate(
-            [self.robot_model.referenceConfigurations["side_takeoff"].copy(),
-             np.zeros(self.robot_model.nv)]
+            [
+                self.robot_model.referenceConfigurations["side_takeoff"].copy(),
+                np.zeros(self.robot_model.nv)
+            ]
         )
         self.x_flying = np.concatenate(
-            [self.robot_model.referenceConfigurations["side_flying"].copy(),
-             np.zeros(self.robot_model.nv)]
+            [
+                self.robot_model.referenceConfigurations["side_flying"].copy(),
+                np.zeros(self.robot_model.nv)
+            ]
         )
         self.x_inverse = np.concatenate(
-            [self.robot_model.referenceConfigurations["side_inverse"].copy(),
-            np.zeros(self.robot_model.nv)]
+            [
+                self.robot_model.referenceConfigurations["side_inverse"].copy(),
+                np.zeros(self.robot_model.nv)
+            ]
         )
         self.x_landing = np.concatenate(
-            [self.robot_model.referenceConfigurations["side_landing"].copy(),
-             np.zeros(self.robot_model.nv)]
+            [
+                self.robot_model.referenceConfigurations["side_landing"].copy(),
+                np.zeros(self.robot_model.nv)
+            ]
         )
 
         # Define friction coefficient and ground
@@ -90,41 +84,13 @@ class SideflipProblem:
 
         # Weights for joint state bounds cost
         self.x_bounds_weights = np.array(
-            [0.0] * 6
-            + [100.0] * (self.robot_model.nv - 6)
-            + [0.0] * 3
-            + [100.0] * 3
-            + [100.0] * (self.robot_model.nv - 6)
+            [0.0] * 6 # base SE3 residual (no bounds)
+            + [100.0] * (self.robot_model.nv - 6) # joint position residual
+            + [0.0] * 3 # base linear velocity residual (no bounds)
+            + [100.0] * 3 # base angular velocity residual
+            + [100.0] * (self.robot_model.nv - 6) # joint velocity residual
         )
-    @staticmethod
-    def smoothstep(a: float) -> float:
-        return 3*a*a - 2*a*a*a
-
-    @staticmethod
-    def smoothstep_d(a: float) -> float:
-        return 6*a - 6*a*a
     
-    @staticmethod
-    def hermite_roll(roll0, rollf, w0, wf, t, T):
-        s = t / T
-        s2 = s*s
-        s3 = s2*s
-
-        h00 =  2*s3 - 3*s2 + 1
-        h10 =      s3 - 2*s2 + s
-        h01 = -2*s3 + 3*s2
-        h11 =      s3 - s2
-
-        roll = h00*roll0 + h10*(T*w0) + h01*rollf + h11*(T*wf)
-
-        dh00 = 6*s2 - 6*s
-        dh10 = 3*s2 - 4*s + 1
-        dh01 = -dh00
-        dh11 = 3*s2 - 2*s
-
-        w = (dh00*roll0 + dh10*(T*w0) + dh01*rollf + dh11*(T*wf)) / T
-        return roll, w
-
     # =========================================================================
     # Stage 1: [pre_takeoff -> takeoff -> flyup -> inverse]
     # =========================================================================
@@ -139,53 +105,78 @@ class SideflipProblem:
         v_liftoff: float,
         x_lb: np.ndarray,
         x_ub: np.ndarray,
+        v_roll_kick: float,
     ) -> crocoddyl.ShootingProblem:
         """
-        First stage:
-            [Ready (side_pre_takeoff), Take-Off (side_takeoff), Flying-Up (side_flying)]
-        Roll rotates from current roll to flyup_roll_target.
-        """
-        sideflip_action_models = []
+        Construct a shooting problem for backflip first stage.
 
-        # FK for initial contacts
+        The first stage includes the following phases:
+            [Ready, Take-Off, Flying-Up]
+
+        The robot body pitch rotates from 0 to -135 degrees.
+
+        :param x0: Initial state of the robot (q0, v0).
+        :param jump_height: Height of the jump in meters.
+        :param jump_length: Length of the jump in meters (x, y, z).
+        :param dt: Time step length in second.
+        :param num_ground_knots: Number of knots on the ground.
+        :param num_flying_knots: Number of knots in the air.
+        :param v_liftoff: Lift-off velocity in the z direction.
+        :param x_lb: Lower bounds for joint states.
+        :param x_ub: Upper bounds for joint states.
+
+        :return: A shooting problem for backflip first stage.
+        """
+        # ---------------------------------------------------------------------------- #
+        # Initialize ----------------------------------------------------------------- #
+        # ---------------------------------------------------------------------------- #
+        sideflip_action_models = []
         q0 = x0[: self.robot_model.nq]
         pinocchio.forwardKinematics(self.robot_model, self.robot_data, q0)
         pinocchio.updateFramePlacements(self.robot_model, self.robot_data)
 
+        # Initial foot contact frames reference SE3
         lf_contact_pose_0 = self.robot_data.oMf[self.lf_contact_frame_id]
         rf_contact_pose_0 = self.robot_data.oMf[self.rf_contact_frame_id]
         foot_poses_ref_0 = {
             self.lf_contact_frame_id: lf_contact_pose_0,
             self.rf_contact_frame_id: rf_contact_pose_0,
         }
-
+        base_pos_ref_0 = (
+            lf_contact_pose_0.translation + rf_contact_pose_0.translation
+        ) / 2.0
+        base_pos_ref_0[2] = self.robot_data.oMf[self.base_frame_id].translation[2]
 
         # --------------------------------------------------------------------- #
         # 1. Take-Off Phase: x0 -> side_takeoff
         # --------------------------------------------------------------------- #
+
         x_track_weights_takeoff = np.array(
-            self.w.get("takeoff_base_pos", [25.0, 100.0, 0.0])
-            + self.w.get("takeoff_base_rot", [100.0, 0.0, 100.0])
-            + self.w.get("takeoff_joint", [50.0]) * (self.state.nv - 6)
-            + self.w.get("takeoff_base_v", [25.0, 100.0, 0.0])
-            + self.w.get("takeoff_base_w", [100.0, 0.0, 100.0])
-            + self.w.get("takeoff_joint_v", [0.0]) * (self.state.nv - 6)
+            self.w.get("side_takeoff_base_pos", [25.0, 100.0, 0.0])
+            + self.w.get("side_takeoff_base_rot", [100.0, 0.0, 100.0])
+            + self.w.get("side_takeoff_joint", [50.0]) * (self.state.nv - 6)
+            + self.w.get("side_takeoff_base_v", [25.0, 100.0, 0.0])
+            + self.w.get("side_takeoff_base_w", [100.0, 0.0, 100.0])
+            + self.w.get("side_takeoff_joint_v", [0.0]) * (self.state.nv - 6)
         )
 
-        x_takeoff = self.x_takeoff.copy()
-        v_roll_kick = -11  # 초기 각속도 주입
-        x_takeoff[self.robot_model.nq : self.robot_model.nq + 6] = np.array([0.0, 0.0, v_liftoff, v_roll_kick, 0.0, 0.0])
-
+        x_takeoff = self.x_takeoff.copy() #수정함
+        x_takeoff[self.robot_model.nq : self.robot_model.nq + 6] = np.array(
+            [0.0, 0.0, v_liftoff, v_roll_kick, 0.0, 0.0]
+        )
         x_ref_traj_takeoff = self.state_interp(x0, x_takeoff, num_ground_knots)
 
         take_off = [
             self.create_knot_action_model(
-                dt, [self.lf_contact_frame_id, self.rf_contact_frame_id],
+                dt, 
+                [self.lf_contact_frame_id, self.rf_contact_frame_id],
                 foot_poses_ref=foot_poses_ref_0,
                 x_ref=x_ref_traj_takeoff[k],
                 x_track_weights=x_track_weights_takeoff,
                 x_track_cost_weight=1e3,
-                x_lb=x_lb, x_ub=x_ub, x_bounds_cost_weight=1e12,
+                x_lb=x_lb, 
+                x_ub=x_ub, 
+                x_bounds_cost_weight=1e12,
             )
             for k in range(num_ground_knots)
         ]
@@ -194,106 +185,74 @@ class SideflipProblem:
             foot_poses_ref=foot_poses_ref_0,
             x_ref=x_takeoff,
             x_track_weights=np.array(
-                self.w.get("takeoff_terminal_base_pos", [25.0, 100.0, 100.0])
-                + self.w.get("takeoff_terminal_base_rot", [100.0, 0.0, 100.0])
-                + self.w.get("takeoff_terminal_joint", [50.0]) * (self.state.nv - 6)
-                + self.w.get("takeoff_terminal_base_v", [0.0, 0.0, 200.0])
-                + self.w.get("takeoff_terminal_base_w", [100.0, 0.0, 100.0])
-                + self.w.get("takeoff_terminal_joint_v", [0.0]) * (self.state.nv - 6)
+                self.w.get("side_takeoff_terminal_base_pos", [25.0, 100.0, 100.0])
+                + self.w.get("side_takeoff_terminal_base_rot", [100.0, 0.0, 100.0])
+                + self.w.get("side_takeoff_terminal_joint", [50.0]) * (self.state.nv - 6)
+                + self.w.get("side_takeoff_terminal_base_v", [0.0, 0.0, 200.0])
+                + self.w.get("side_takeoff_terminal_base_w", [100.0, 0.0, 100.0])
+                + self.w.get("side_takeoff_terminal_joint_v", [0.0]) * (self.state.nv - 6)
             ),
             x_track_cost_weight=1e6,
-            x_lb=x_lb, x_ub=x_ub, x_bounds_cost_weight=1e12,
+            x_lb=x_lb, 
+            x_ub=x_ub, 
+            x_bounds_cost_weight=1e12,
+        )
+# ---------------------------------------------------------------------------- #
+        # 2. Flying-Up Phase: [Takeoff -> Flying(Tuck)]
+        # ---------------------------------------------------------------------------- #
+        base_pos_ref_0 = x_takeoff[:3]
+        base_pos_ref_peak = base_pos_ref_0 + np.array(
+            [
+                jump_length[0] / 2.0,
+                jump_length[1] / 2.0,
+                jump_height, 
+            ]
+        )
+        base_pos_ref_traj = [
+            base_pos_ref_0 + (base_pos_ref_peak - base_pos_ref_0) * (k + 1) / num_flying_knots
+            for k in range(num_flying_knots)
+        ]
+
+        start_roll = R.from_quat(x_takeoff[3:7]).as_euler("zyx")[2]
+        target_roll = self.flyup_roll_target
+        
+        base_roll_ref_traj = [
+            start_roll + (target_roll - start_roll) * (k + 1) / num_flying_knots
+            for k in range(num_flying_knots)
+        ]
+        
+        base_quat_ref_traj = [
+            R.from_euler("zyx", [0.0, 0.0, base_roll_ref_traj[k]]).as_quat()
+            for k in range(num_flying_knots)
+        ]
+
+        base_roll_ang_vel_ref = (target_roll - start_roll) / (num_flying_knots * dt)
+        base_ang_vel_ref = [
+            np.array([base_roll_ang_vel_ref, 0.0, 0.0])
+            for k in range(num_flying_knots)
+        ]
+
+        n_interp = max(0, num_flying_knots - 10)
+        x_ref_traj_flyup = np.vstack(
+            [
+                self.state_interp(x_takeoff, self.x_flying, n_interp),
+                np.tile(self.x_flying, (num_flying_knots - n_interp, 1)),
+            ]
         )
 
-        # --------------------------------------------------------------------- #
-        # 2. Flying-Up Phase: [Takeoff -> Flying(Tuck) -> Inverse]
-        # --------------------------------------------------------------------- #
-        n_mid = int(num_flying_knots * 0.5)
-        n_end = num_flying_knots - n_mid
-
-        # posture traj 
-        traj_a = self.state_interp(x_takeoff, self.x_flying, n_mid)
-        traj_b = self.state_interp(self.x_flying, self.x_inverse, n_end)
-        x_ref_traj_flyup = np.vstack([traj_a, traj_b])
-
-        # ------------------ base position ref  ------------------#
-        base_pos_ref_0 = x_takeoff[:3]
-        base_pos_ref_peak = base_pos_ref_0 + np.array([jump_length[0] / 2, jump_length[1] / 2, jump_height])
-
-        # XY는 선형, Z는 ballistic
-        g = 9.81
-        v0z = x_takeoff[self.robot_model.nq + 2]  # liftoff vz
-
-        base_pos_ref_traj = []
-        for k in range(num_flying_knots):
-            t = (k + 1) * dt
-            alpha = (k + 1) / num_flying_knots
-
-            # XY linear
-            xy = base_pos_ref_0[0:2] + (base_pos_ref_peak[0:2] - base_pos_ref_0[0:2]) * alpha
-
-            # Z ballistic (clamp to peak)
-            z_ref = x_takeoff[2] + v0z * t - 0.5 * g * t * t
-            z_peak = x_takeoff[2] + jump_height
-            z = min(z_ref, z_peak)
-
-            base_pos_ref_traj.append(np.array([xy[0], xy[1], z]))
-
-        x_ref_traj_flyup[:, :3] = np.array(base_pos_ref_traj)
-
-        # ------------------ roll traj + quat traj ------------------- #
-        yaw_s, pitch_s, roll_s = R.from_quat(x_takeoff[3:7]).as_euler("zyx")
-        if roll_s > 0:
-            roll_s -= 2.0 * np.pi
-
-        roll_f = float(self.flyup_roll_target)   # ex) -np.pi
-        # base_roll_ref_traj = np.linspace(roll_s, roll_f, num_flying_knots)
-
-        # base_roll_w_ref = np.gradient(base_roll_ref_traj, dt)
-
-        # base_quat_ref_traj = []
-        # for k in range(num_flying_knots):
-        #     yaw_k, pitch_k, _ = R.from_quat(x_ref_traj_flyup[k, 3:7]).as_euler("zyx")
-        #     q = R.from_euler("zyx", [yaw_k, pitch_k, base_roll_ref_traj[k]]).as_quat()
-        #     base_quat_ref_traj.append(q)
-
-        Tf = num_flying_knots * dt
-
-        w0_roll = float(x_takeoff[self.robot_model.nq + 3])  # v_roll_kick
-        w_end_roll = (roll_f - roll_s) / Tf  # nonzero (원하면 스케일 조절)
-
-        base_roll_ref_traj = []
-        base_roll_w_ref = []
-
-        for k in range(num_flying_knots):
-            t = (k + 1) * dt
-            roll, wroll = self.hermite_roll(roll_s, roll_f, w0_roll, w_end_roll, t, Tf)
-            base_roll_ref_traj.append(roll)
-            base_roll_w_ref.append(wroll)
-
-        # quat 업데이트 (yaw/pitch 유지, roll만 교체)
-        base_quat_ref_traj = []
-        for k in range(num_flying_knots):
-            yaw_k, pitch_k, _ = R.from_quat(x_ref_traj_flyup[k, 3:7]).as_euler("zyx")
-            q = R.from_euler("zyx", [yaw_k, pitch_k, base_roll_ref_traj[k]]).as_quat()
-            base_quat_ref_traj.append(q)
-
+        x_ref_traj_flyup[:, :3] = np.array(base_pos_ref_traj) 
         x_ref_traj_flyup[:, 3:7] = np.array(base_quat_ref_traj)
-
-        # base angular velocity ref
-        x_ref_traj_flyup[:, self.robot_model.nq + 3] = np.array(base_roll_w_ref)
-        x_ref_traj_flyup[:, self.robot_model.nq + 4] = 0.0
-        x_ref_traj_flyup[:, self.robot_model.nq + 5] = 0.0
-
+        
+        x_ref_traj_flyup[:, self.robot_model.nq + 3 : self.robot_model.nq + 6] = base_ang_vel_ref
 
 
         x_track_weights_flyup = np.array(
-            self.w.get("flyup_base_pos", [10.0, 100.0, 0.0])
-            + self.w.get("flyup_base_rot", [100.0, 10.0, 100.0])
-            + self.w.get("flyup_joint", [75.0]) * (self.state.nv - 6)
-            + self.w.get("flyup_base_v", [0.0, 100.0, 0.0])
-            + self.w.get("flyup_base_w", [100.0, 100.0, 100.0])
-            + self.w.get("flyup_joint_v", [0.5]) * (self.state.nv - 6)
+            self.w.get("side_flyup_base_pos", [10.0, 100.0, 0.0])
+            + self.w.get("side_flyup_base_rot", [100.0, 10.0, 100.0])
+            + self.w.get("side_flyup_joint", [75.0]) * (self.state.nv - 6)
+            + self.w.get("side_flyup_base_v", [0.0, 100.0, 0.0])
+            + self.w.get("side_flyup_base_w", [100.0, 100.0, 100.0])
+            + self.w.get("side_flyup_joint_v", [0.5]) * (self.state.nv - 6)
         )
 
         fly_up = [
@@ -306,16 +265,15 @@ class SideflipProblem:
             for k in range(num_flying_knots)
         ]
         
-        # Stage 1: inverse 자세까지 만들기
         fly_up[-1] = self.create_knot_action_model(
             dt, [], x_ref=x_ref_traj_flyup[-1],
             x_track_weights=np.array(
-                self.w.get("flyup_terminal_base_pos", [10.0, 100.0, 0.0])
-                + self.w.get("flyup_terminal_base_rot", [1000.0, 100.0, 100.0])
-                + self.w.get("flyup_terminal_joint", [150.0]) * (self.state.nv - 6)
-                + self.w.get("flyup_terminal_base_v", [0.0, 100.0, 50.0])
-                + self.w.get("flyup_terminal_base_w", [1000.0, 100.0, 100.0])
-                + self.w.get("flyup_terminal_joint_v", [0.0]) * (self.state.nv - 6)
+                self.w.get("side_flyup_terminal_base_pos", [10.0, 100.0, 0.0])
+                + self.w.get("side_flyup_terminal_base_rot", [1000.0, 100.0, 100.0])
+                + self.w.get("side_flyup_terminal_joint", [150.0]) * (self.state.nv - 6)
+                + self.w.get("side_flyup_terminal_base_v", [0.0, 100.0, 50.0])
+                + self.w.get("side_flyup_terminal_base_w", [1000.0, 100.0, 100.0])
+                + self.w.get("side_flyup_terminal_joint_v", [0.0]) * (self.state.nv - 6)
             ),
             x_track_cost_weight=1e6,
             x_lb=x_lb, x_ub=x_ub, x_bounds_cost_weight=1e12,
@@ -345,72 +303,66 @@ class SideflipProblem:
         """
         sideflip_action_models = []
 
-        pinocchio.forwardKinematics(self.robot_model, self.robot_data, self.x_ground[: self.robot_model.nq])
+        pinocchio.forwardKinematics(
+            self.robot_model, self.robot_data, self.x_ground[: self.robot_model.nq]
+        )
         pinocchio.updateFramePlacements(self.robot_model, self.robot_data)
 
-        # landing position along jump_length (you use [0, +y, 0] typically)
         landing_x = float(jump_length[0])
         landing_y = float(jump_length[1])
-        landing_z = float(jump_length[2])
-
         foot_poses_ref_final = {
-            self.lf_contact_frame_id: pinocchio.SE3(np.eye(3), np.array([landing_x, landing_y+ self.foot_sep, 0.0])),
-            self.rf_contact_frame_id: pinocchio.SE3(np.eye(3), np.array([landing_x, landing_y- self.foot_sep, 0.0])),
+            self.lf_contact_frame_id: pinocchio.SE3(
+                np.eye(3), np.array([landing_x, landing_y+ self.foot_sep, 0.0])
+            ),
+            self.rf_contact_frame_id: pinocchio.SE3(
+                np.eye(3), np.array([landing_x, landing_y- self.foot_sep, 0.0])
+            ),
         }
 
 
-        # Build landing posture state (shift base translation by jump_length)
-        x_landing = self.x_landing.copy()
-        x_landing[:3] += np.array([landing_x, landing_y, landing_z])
+        # ---------------------------------------------------------------------------- #
+        # 1. Flying-Down Phase: [Inverse -> Landing]
+        # ---------------------------------------------------------------------------- #
+        self.x_landing[:3] += np.array(jump_length)
+        base_roll_0 = R.from_quat(x0[3:7]).as_euler("zyx")[2]
+        base_roll_f = R.from_quat(self.x_landing[3:7]).as_euler("zyx")[2]
 
-        # --------------------------------------------------------------------- #
-        # 1. Flying-Down Reference: [Inverse(-180) -> Landing(-360)]
-        # --------------------------------------------------------------------- #
-        x_ref_traj_flydown = self.state_interp(x0, x_landing, num_flying_knots)
+        if base_roll_0 > 0: base_roll_0 -= 2.0 * np.pi
+        while base_roll_f > base_roll_0: base_roll_f -= 2.0 * np.pi
 
-        # roll start/end
-        roll_0 = R.from_quat(x0[3:7]).as_euler("zyx")[2]
-        roll_f = float(self.land_roll_target)
+        base_roll_ref_traj = [
+            base_roll_0 + (base_roll_f - base_roll_0) * (k + 1) / num_flying_knots
+            for k in range(num_flying_knots)
+        ]
+        base_quat_ref_traj = [
+            R.from_euler("zyx", [0.0, 0.0, base_roll_ref_traj[k]]).as_quat()
+            for k in range(num_flying_knots)
+        ]
+        base_roll_ang_vel_ref = (base_roll_f - base_roll_0) / (num_flying_knots * dt)
 
-        if roll_0 > 0:
-            roll_0 -= 2.0 * np.pi
-        while roll_f > roll_0:
-            roll_f -= 2.0 * np.pi
-
-        # stage2 시작 각속도 = x0의 wx (stage1 끝에서 넘어온 값)
-        w0_roll = float(x0[self.robot_model.nq + 3])
-
-        w_end_roll = w0_roll
-
-        Tf = num_flying_knots * dt
-
-        base_roll_ref_traj = []
-        base_roll_w_ref = []
-
-        for k in range(num_flying_knots):
-            t = (k + 1) * dt  # (0, Tf]
-            roll, wroll = self.hermite_roll(roll_0, roll_f, w0_roll, w_end_roll, t, Tf)
-            base_roll_ref_traj.append(roll)
-            base_roll_w_ref.append(wroll)
-
-        base_quat_ref_traj = []
-        for k in range(num_flying_knots):
-            yaw_k, pitch_k, _ = R.from_quat(x_ref_traj_flydown[k, 3:7]).as_euler("zyx")
-            q = R.from_euler("zyx", [yaw_k, pitch_k, base_roll_ref_traj[k]]).as_quat()
-            base_quat_ref_traj.append(q)
-
+        x_ref_traj_flydown = self.state_interp(x0, self.x_landing, num_flying_knots)
         x_ref_traj_flydown[:, 3:7] = np.array(base_quat_ref_traj)
-        x_ref_traj_flydown[:, self.robot_model.nq + 3] = np.array(base_roll_w_ref)  # wx(t)
-        x_ref_traj_flydown[:, self.robot_model.nq + 4] = 0.0
-        x_ref_traj_flydown[:, self.robot_model.nq + 5] = 0.0
+        
+        x_ref_traj_flydown[:, self.robot_model.nq : self.robot_model.nq + 3] = 0.0
+        x_ref_traj_flydown[:, self.robot_model.nq + 3] = base_roll_ang_vel_ref * np.ones(num_flying_knots)
+        x_ref_traj_flydown[:, self.robot_model.nq + 4] = np.zeros(num_flying_knots)
+        x_ref_traj_flydown[:, self.robot_model.nq + 5] = np.zeros(num_flying_knots)
 
+        joint_pos_0 = x0[7 : self.robot_model.nq]
+        joint_pos_ref_land = self.x_landing[7 : self.robot_model.nq]
+        joint_pos_ref_traj = [
+            joint_pos_0
+            + (joint_pos_ref_land - joint_pos_0) * (k + 1) / (num_flying_knots - 12)
+            for k in range(num_flying_knots - 12)
+        ] + [joint_pos_ref_land] * 12
+        x_ref_traj_flydown[:, 7 : self.robot_model.nq] = np.array(joint_pos_ref_traj)
         x_track_weights_flydown = np.array(
-            self.w.get("flydown_base_pos", [30.0, 0.0, 0.0])
-            + self.w.get("flydown_base_rot", [10.0, 10.0, 10.0])
-            + self.w.get("flydown_joint", [120.0]) * (self.state.nv - 6)
-            + self.w.get("flydown_base_v", [0.0, 0.0, 0.0])
-            + self.w.get("flydown_base_w", [0.0, 0.0, 0.0])
-            + self.w.get("flydown_joint_v", [0.1]) * (self.state.nv - 6)
+            self.w.get("side_flydown_base_pos", [30.0, 0.0, 0.0])
+            + self.w.get("side_flydown_base_rot", [10.0, 10.0, 10.0])
+            + self.w.get("side_flydown_joint", [120.0]) * (self.state.nv - 6)
+            + self.w.get("side_flydown_base_v", [0.0, 0.0, 0.0])
+            + self.w.get("side_flydown_base_w", [0.0, 0.0, 0.0])
+            + self.w.get("side_flydown_joint_v", [0.1]) * (self.state.nv - 6)
         )
 
         fly_down = [
@@ -430,12 +382,12 @@ class SideflipProblem:
             foot_poses_track_cost_weight=1e8,
             x_ref=x_ref_traj_flydown[-1],
             x_track_weights=np.array(
-                self.w.get("flydown_terminal_base_pos", [80.0, 0.0, 100.0])
-                + self.w.get("flydown_terminal_base_rot", [10.0, 10.0, 10.0])
-                + self.w.get("flydown_terminal_joint", [120.0]) * (self.state.nv - 6)
-                + self.w.get("flydown_terminal_base_v", [0.0, 0.0, 0.0])
-                + self.w.get("flydown_terminal_base_w", [0.0, 0.0, 0.0])
-                + self.w.get("flydown_terminal_joint_v", [0.0]) * (self.state.nv - 6)
+                self.w.get("side_flydown_terminal_base_pos", [80.0, 0.0, 100.0])
+                + self.w.get("side_flydown_terminal_base_rot", [10.0, 10.0, 10.0])
+                + self.w.get("side_flydown_terminal_joint", [120.0]) * (self.state.nv - 6)
+                + self.w.get("side_flydown_terminal_base_v", [0.0, 0.0, 0.0])
+                + self.w.get("side_flydown_terminal_base_w", [0.0, 0.0, 0.0])
+                + self.w.get("side_flydown_terminal_joint_v", [0.0]) * (self.state.nv - 6)
             ),
             x_track_cost_weight=1e6,
             x_lb=x_lb, x_ub=x_ub, x_bounds_cost_weight=1e12,
@@ -443,6 +395,7 @@ class SideflipProblem:
         # ----------------------------------2----------------------------------- #
         # Landing (impulse)
         # --------------------------------------------------------------------- #
+        
         landing = [
             self.create_knot_impulse_model(
                 [self.lf_contact_frame_id, self.rf_contact_frame_id],
@@ -450,12 +403,12 @@ class SideflipProblem:
                 foot_poses_track_cost_weight=1e6,
                 x_ref=x_ref_traj_flydown[-1],
                 x_track_weights=np.array(
-                    self.w.get("landing_base_pos", [0.0, 0.0, 0.0])
-                    + self.w.get("landing_base_rot", [10.0, 10.0, 10.0])
-                    + self.w.get("landing_joint", [120.0]) * (self.state.nv - 6)
-                    + self.w.get("landing_base_v", [0.0, 0.0, 0.0])
-                    + self.w.get("landing_base_w", [0.0, 0.0, 0.0])
-                    + self.w.get("landing_joint_v", [0.0]) * (self.state.nv - 6)
+                    self.w.get("side_landing_base_pos", [0.0, 0.0, 0.0])
+                    + self.w.get("side_landing_base_rot", [10.0, 10.0, 10.0])
+                    + self.w.get("side_landing_joint", [120.0]) * (self.state.nv - 6)
+                    + self.w.get("side_landing_base_v", [0.0, 0.0, 0.0])
+                    + self.w.get("side_landing_base_w", [0.0, 0.0, 0.0])
+                    + self.w.get("side_landing_joint_v", [0.0]) * (self.state.nv - 6)
                 ),
                 x_track_cost_weight=1e3,
             )
@@ -464,28 +417,28 @@ class SideflipProblem:
         # --------------------------------------------------------------------- #
         # Landed stabilization: track side_sitting with shifted y
         # --------------------------------------------------------------------- #
+        x_at_impact = x_ref_traj_flydown[-1].copy()
         x_ref_final = self.x_ground.copy()
-        x_ref_final[0] = landing_x
-        x_ref_final[1] = landing_y
-        x_ref_final[2] = self.x_ground[2]
-
+        x_ref_final[0:3] = [landing_x, landing_y, self.x_ground[2]]
+        x_landed_traj = self.state_interp(x_at_impact, x_ref_final, num_ground_knots)
+        
         landed = [
             self.create_knot_action_model(
                 dt,
                 [self.lf_contact_frame_id, self.rf_contact_frame_id],
                 foot_poses_ref=foot_poses_ref_final,
-                x_ref=x_ref_final,
+                x_ref=x_landed_traj[k],
                 x_track_weights=np.array(
-                    self.w.get("landed_base_pos", [120.0, 120.0, 120.0])
-                    + self.w.get("landed_base_rot", [50.0, 50.0, 50.0])
-                    + self.w.get("landed_joint", [100.0]) * (self.state.nv - 6)
-                    + self.w.get("landed_base_v", [0.0, 0.0, 0.0])
-                    + self.w.get("landed_base_w", [0.0, 0.0, 0.0])
-                    + self.w.get("landed_joint_v", [5.0]) * (self.state.nv - 6)
+                    self.w.get("side_landed_base_pos", [120.0, 120.0, 120.0])
+                    + self.w.get("side_landed_base_rot", [50.0, 50.0, 50.0])
+                    + self.w.get("side_landed_joint", [100.0]) * (self.state.nv - 6)
+                    + self.w.get("side_landed_base_v", [0.0, 0.0, 0.0])
+                    + self.w.get("side_landed_base_w", [0.0, 0.0, 0.0])
+                    + self.w.get("side_landed_joint_v", [5.0]) * (self.state.nv - 6)
                 ),
                 x_track_cost_weight=1e3,
             )
-            for _ in range(num_ground_knots)
+            for k in range(num_ground_knots)
         ]
 
         sideflip_action_models += fly_down

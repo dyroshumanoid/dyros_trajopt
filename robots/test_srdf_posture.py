@@ -18,8 +18,8 @@ else:
     # Example:
     # URDF_PATH = "/home/kwan/dyros_trajopt/robots/dyros_tocabi_v2/dyros_tocabi_v2.urdf"
     # URDF_PATH = "./tocabi/urdf/dyros_tocabi.urdf"
-    # URDF_PATH = "./p73/urdf/p73.urdf"
-    URDF_PATH = "./simple_humanoid/urdf/simple_humanoid.urdf"
+    URDF_PATH = "./p73/urdf/p73.urdf"
+    # URDF_PATH = "./simple_humanoid/urdf/simple_humanoid.urdf"
 
 
 # SRDF is assumed to be in the same folder with the same base name
@@ -62,16 +62,16 @@ print(ref_names)
 
 # Postures we want to test
 posture_names = [
-    # "half_sitting",
-    # "flying_ready",
-    # "flying_takeoff",
-    # "flying",
-    # "flying_land",
-    "side_sitting",
-    "side_takeoff",
-    "side_flying",
-    "side_inverse",
-    "side_landing"
+    "half_sitting",
+    "flying_ready",
+    "flying_takeoff",
+    "flying",
+    "flying_land",
+    # "side_sitting",
+    # "side_takeoff",
+    # "side_flying",
+    # "side_inverse",
+    # "side_landing"
 ]
 
 # Filter only those that actually exist in the SRDF
