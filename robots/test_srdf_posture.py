@@ -62,16 +62,16 @@ print(ref_names)
 
 # Postures we want to test
 posture_names = [
-    "half_sitting",
-    "flying_ready",
-    "flying_takeoff",
-    "flying",
-    "flying_land",
-    # "side_sitting",
-    # "side_takeoff",
-    # "side_flying",
-    # "side_inverse",
-    # "side_landing"
+    # "half_sitting",
+    # "flying_ready",
+    # "flying_takeoff",
+    # "flying",
+    # "flying_land",
+    "side_sitting",
+    "side_takeoff",
+    "side_flying",
+    "side_inverse",
+    "side_landing"
 ]
 
 # Filter only those that actually exist in the SRDF

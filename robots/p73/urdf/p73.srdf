@@ -225,27 +225,27 @@
   </group_state>
 
   <group_state name="side_takeoff" group="all">
-    <joint name="root_joint" value="0 0 0.75478727 -0.2588 0 0 0.9659"/>
+    <joint name="root_joint" value="0 0 0.88478727 0 0 0 1"/>
     <joint name="WaistPitch_Joint"    value="0.7"/>
 
-    <joint name="R_HipRoll_Joint"     value="-0.02"/>
-    <joint name="R_HipPitch_Joint"    value="-0.73"/>
+    <joint name="R_HipRoll_Joint"     value="-0.14"/>
+    <joint name="R_HipPitch_Joint"    value="-0.47"/>
     <joint name="R_HipYaw_Joint"      value="0"/>
-    <joint name="R_Knee_Joint"        value="-1.25"/>
-    <joint name="R_AnklePitch_Joint"  value="0.158879"/>
-    <joint name="R_AnkleRoll_Joint"   value="0"/>
+    <joint name="R_Knee_Joint"        value="-0.69"/>
+    <joint name="R_AnklePitch_Joint"  value="0.24"/>
+    <joint name="R_AnkleRoll_Joint"   value="-0.14"/>
 
     <joint name="R_ShoulderRoll_Joint" value="0.15"/>
     <joint name="R_ShoulderPitch_Joint" value="-0.22"/>
     <joint name="R_Elbow_Joint"         value="0.45"/>
     <joint name="R_ShoulderYaw_Joint"   value="0"/>
 
-    <joint name="L_HipRoll_Joint"     value="0.02"/>
-    <joint name="L_HipPitch_Joint"    value="0.73"/>
+    <joint name="L_HipRoll_Joint"     value="0.14"/>
+    <joint name="L_HipPitch_Joint"    value="0.47"/>
     <joint name="L_HipYaw_Joint"      value="0"/>
-    <joint name="L_Knee_Joint"        value="1.25"/>
-    <joint name="L_AnklePitch_Joint"  value="-0.158879"/>
-    <joint name="L_AnkleRoll_Joint"   value="0"/>
+    <joint name="L_Knee_Joint"        value="0.69"/>
+    <joint name="L_AnklePitch_Joint"  value="-0.24"/>
+    <joint name="L_AnkleRoll_Joint"   value="-0.14"/>
 
     <joint name="L_ShoulderRoll_Joint" value="-0.15"/>
     <joint name="L_ShoulderPitch_Joint" value="0.22"/>
