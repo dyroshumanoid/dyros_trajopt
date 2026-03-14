@@ -65,7 +65,7 @@ z_RF = data.oMf[model.getFrameId(right_foot_name)].translation[2]
 z_LF = data.oMf[model.getFrameId(left_foot_name)].translation[2]
 z0   = 0.5 * (z_RF + z_LF)
 q0[2] -= z0
-q0[2] +=0.1585
+q0[2] +=0.1625
 model.referenceConfigurations["half_sitting"] = q0.copy()
 
 v0 = np.zeros(model.nv)
