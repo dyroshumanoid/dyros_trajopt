@@ -531,7 +531,7 @@ class BackflipProblem:
         x_lb: np.ndarray = None,
         x_ub: np.ndarray = None,
         x_bounds_cost_weight: float = 1e6,
-        ctrl_regu_cost_weight: float = 1e-8,
+        ctrl_regu_cost_weight: float = 1e0,
     ) -> crocoddyl.IntegratedActionModelAbstract:
         """
         Create an action model for one knot.

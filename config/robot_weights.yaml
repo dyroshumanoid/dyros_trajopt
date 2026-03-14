@@ -277,7 +277,7 @@ p73:
   takeoff_base_w: [100.0, 0.0, 100.0]
   takeoff_joint_v: [0.0]
   
-  takeoff_terminal_base_pos: [25.0, 100.0, 100.0]
+  takeoff_terminal_base_pos: [20.0, 80.0, 80.0]
   takeoff_terminal_base_rot: [100.0, 0.0, 100.0]
   takeoff_terminal_joint: [50.0]
   takeoff_terminal_base_v: [0.0, 0.0, 200.0]
@@ -291,7 +291,7 @@ p73:
   flyup_base_w: [100.0, 100.0, 100.0]
   flyup_joint_v: [0.5]
   
-  flyup_terminal_base_pos: [10.0, 100.0, 10.0]
+  flyup_terminal_base_pos: [10.0, 80.0, 40.0]
   flyup_terminal_base_rot: [100.0, 100.0, 100.0]
   flyup_terminal_joint: [120.0]
   flyup_terminal_base_v: [0.0, 100.0, 50.0]
@@ -306,7 +306,7 @@ p73:
   flydown_joint_v: [0.1]
   
   flydown_terminal_base_pos: [60.0, 0.0, 80.0]
-  flydown_terminal_base_rot: [20.0, 20.0, 20.0]
+  flydown_terminal_base_rot: [30.0, 30.0, 30.0]
   flydown_terminal_joint: [120.0]
   flydown_terminal_base_v: [0.0, 0.0, 0.0]
   flydown_terminal_base_w: [0.0, 0.0, 0.0]

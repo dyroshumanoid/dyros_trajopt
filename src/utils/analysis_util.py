@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 
-def save_and_plot_robot_data(model, xs, us, dt, robot_name):
+def save_and_plot_robot_data(model, xs, us, dt, robot_name, solve_time=None, iterations=None):
     xs = np.array(xs)
     us = np.array(us)
     num_knots = us.shape[0]
@@ -22,17 +22,29 @@ def save_and_plot_robot_data(model, xs, us, dt, robot_name):
 
     save_dir = f"./{robot_name}_analysis"
     if not os.path.exists(save_dir): os.makedirs(save_dir)
-    np.savez(f"{save_dir}/data.npz", t=time_array, **data_dict)
+    np.savez(f"{save_dir}/data.npz", t=time_array,solve_time=solve_time, iters=iterations, **data_dict)
+
+    with open(f"{save_dir}/performance_summary.txt", "w") as f:
+        f.write(f"Robot: {robot_name}\n")
+        f.write(f"Solve Time: {solve_time:.4f} s\n" if solve_time else "Solve Time: N/A\n")
+        f.write(f"Iterations: {iterations}\n" if iterations else "Iterations: N/A\n")
 
     for title, data in data_dict.items():
         fig, axs = plt.subplots(4, 3, figsize=(12, 10))
-        fig.suptitle(f"{robot_name} - {title}", fontsize=15)
+
+        main_title = f"{robot_name} - {title}"
+        sub_info = ""
+        if solve_time is not None and iterations is not None:
+            sub_info = f"\n(Solve Time: {solve_time:.3f}s, Iterations: {iterations})"
+        
+        fig.suptitle(main_title + sub_info, fontsize=15)
         axs = axs.flatten()
         
         for i in range(12):
             axs[i].plot(time_array, data[:, i], label=f'Joint {i}')
             axs[i].set_title(f"Joint {i}")
             axs[i].grid(True)
+            
             
             if "Torque" in title and (i + 6) < len(model.effortLimit):
                 limit = model.effortLimit[i + 6]
@@ -43,4 +55,4 @@ def save_and_plot_robot_data(model, xs, us, dt, robot_name):
         plt.savefig(f"{save_dir}/{title.split()[0].lower()}_plot.png")
 
     print(f"[Analysis] Plots generated and saved in {save_dir}")
-    plt.show() # 모든 창을 동시에 띄움
+    plt.show(block=False) # 모든 창을 동시에 띄움

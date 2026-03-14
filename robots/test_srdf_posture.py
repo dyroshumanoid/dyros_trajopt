@@ -17,8 +17,8 @@ else:
     # TODO: Set this to your actual dyros_tocabi_v2 URDF path
     # Example:
     # URDF_PATH = "/home/kwan/dyros_trajopt/robots/dyros_tocabi_v2/dyros_tocabi_v2.urdf"
-    # URDF_PATH = "./tocabi/urdf/dyros_tocabi.urdf"
-    URDF_PATH = "./p73/urdf/p73.urdf"
+    URDF_PATH = "./tocabi/urdf/dyros_tocabi.urdf"
+    # URDF_PATH = "./p73/urdf/p73.urdf"
     # URDF_PATH = "./simple_humanoid/urdf/simple_humanoid.urdf"
 
 
@@ -66,12 +66,12 @@ posture_names = [
     # "flying_ready",
     # "flying_takeoff",
     # "flying",
-    # "flying_land",
-    "side_sitting",
-    "side_takeoff",
-    "side_flying",
-    "side_inverse",
-    "side_landing"
+    "flying_land",
+    # "side_sitting",
+    # "side_takeoff",
+    # "side_flying",
+    # "side_inverse",
+    # "side_landing"
 ]
 
 # Filter only those that actually exist in the SRDF

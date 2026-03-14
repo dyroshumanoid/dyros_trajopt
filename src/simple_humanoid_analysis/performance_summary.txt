@@ -1,0 +1,3 @@
+Robot: simple_humanoid
+Solve Time: N/A
+Iterations: N/A

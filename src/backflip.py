@@ -7,6 +7,7 @@ import yaml
 import numpy as np
 import pinocchio
 import crocoddyl
+import matplotlib.pyplot as plt
 
 from pinocchio.robot_wrapper import RobotWrapper
 from crocoddyl import MeshcatDisplay
@@ -15,9 +16,9 @@ from utils.backflip_util import BackflipProblem
 from utils.analysis_util import save_and_plot_robot_data
 
 # -------------------- Runtime flags -----------------------------------------
-WITHDISPLAY = "display" in sys.argv or "CROCODDYL_DISPLAY" in os.environ
-WITHPLOT    = "plot"    in sys.argv or "CROCODDYL_PLOT"    in os.environ
-WITHSAVE    = "save"    in sys.argv or "CROCODDYL_SAVE"    in os.environ
+WITHDISPLAY = True
+WITHPLOT    = False
+WITHSAVE    = True
 signal.signal(signal.SIGINT, signal.SIG_DFL)
 
 # -------------------- Paths --------------------------------------------------
@@ -240,7 +241,7 @@ for stage in BACKFLIP_STAGES:
     us_qs = problem.quasiStatic(xs_init[:-1])
     us_init = [np.array(u).copy() for u in us_qs]
 
-    ddp.solve(xs_init, us_init, 1000, False)
+    ddp.solve(xs_init, us_init, 2000, False)
 
     # Update initial state for next stage
     x0 = ddp.xs[-1].copy()
@@ -285,18 +286,34 @@ print("x_traj shape:", x_traj.shape)
 print("u_traj shape:", u_traj.shape)
 
 
-# ---------------------------------------------------------------
-if WITHPLOT:
-    print(f"\n[Analysis] Plotting data for {robot_name}...")
-    save_and_plot_robot_data(
-        model=model,
-        xs=x_traj,
-        us=u_traj,
-        dt=TIMESTEP,
-        robot_name=robot_name
-    )
+# -------------------- Data Analysis and Plotting --------------------------
+# if WITHPLOT:
+#     print(f"\n[Analysis] Plotting data for {robot_name}...")
+#     save_and_plot_robot_data(
+#         model=model,
+#         xs=x_traj,
+#         us=u_traj,
+#         dt=TIMESTEP,
+#         robot_name=robot_name,
+#     )
+#     plt.pause(0.1) 
 
-
+# --------------------Display with Meshcat -------------------------
+if WITHDISPLAY:
+    display = MeshcatDisplay(robot)
+    display.forceScale = 1.0
+    display.withContactForces = True
+    
+    print("\n[Display] Meshcat display is starting...")
+    try:
+        while True:
+            for ddp_solver in solver:
+                display.displayFromSolver(ddp_solver)
+            
+            plt.pause(0.01) 
+            time.sleep(1.0)
+    except KeyboardInterrupt:
+        print("\nStopping display...")
 # -------------------- Optional: save trajectory -----------------------------
 if WITHSAVE:
     SAVE_DIR = os.path.join(BASE_DIR, "../backflip_dataset")
@@ -306,18 +323,5 @@ if WITHSAVE:
     np.savetxt(os.path.join(SAVE_DIR, "u_traj.txt"), u_traj)
     print(f"[backflip] Saved trajectories to: {SAVE_DIR}")
 
-# -------------------- Display with Meshcat ----------------------------------
-if WITHDISPLAY:
-    display = MeshcatDisplay(robot)
-    display.forceScale = 1.0
-    display.frictionConeScale = 0.07
-    display.withContactForces = True
-    display.withFrictionCones = True
-    display.rate = -1
-    display.freq = 1
-    while True:
-        for ddp in solver:
-            display.displayFromSolver(ddp)
-        time.sleep(2.0)
 
 # If no display, just exit

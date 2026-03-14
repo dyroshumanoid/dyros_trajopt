@@ -51,7 +51,7 @@
   <!-- ================================================= -->
 
   <group_state name="half_sitting" group="all">
-    <joint name="root_joint" value="0 0 0.85478727 0 0 0 1"/>
+    <joint name="root_joint" value="0 0 1.0132827 0 0 0 1"/>
 
     <!-- Right leg -->
     <joint name="R_HipRoll_Joint"     value="0"/>
@@ -252,12 +252,7 @@
     <joint name="Waist2_Joint"     value="0.2"/>
     <joint name="Upperbody_Joint"     value="-0.4"/>
 
-    <!-- <joint name="R_HipRoll_Joint"     value="0.11"/>
-    <joint name="R_HipPitch_Joint"    value="-0.47"/>
-    <joint name="R_HipYaw_Joint"      value="0"/>
-    <joint name="R_Knee_Joint"        value="0.69"/>
-    <joint name="R_AnklePitch_Joint"  value="-0.29"/>
-    <joint name="R_AnkleRoll_Joint"   value="-0.11"/> -->
+
     <joint name="R_HipRoll_Joint"     value="0.14"/>
     <joint name="R_HipPitch_Joint"    value="-0.47"/>
     <joint name="R_HipYaw_Joint"      value="0"/>
@@ -274,12 +269,7 @@
 
 
     <!-- Left leg -->
-    <!-- <joint name="L_HipRoll_Joint"     value="0.33"/>
-    <joint name="L_HipPitch_Joint"    value="-0.38"/>
-    <joint name="L_HipYaw_Joint"      value="0"/>
-    <joint name="L_Knee_Joint"        value="0.38"/>
-    <joint name="L_AnklePitch_Joint"  value="-0.07"/>
-    <joint name="L_AnkleRoll_Joint"   value="-0.33"/> -->
+
     <joint name="L_HipRoll_Joint"     value="0.14"/>
     <joint name="L_HipPitch_Joint"    value="-0.47"/>
     <joint name="L_HipYaw_Joint"      value="0"/>

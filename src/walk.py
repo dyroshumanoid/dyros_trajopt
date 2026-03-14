@@ -4,6 +4,7 @@ from pinocchio.robot_wrapper import RobotWrapper
 from crocoddyl import MeshcatDisplay
 from utils.custom_biped import SimpleBipedGaitProblem, plotSolution
 from utils.analysis_util import save_and_plot_robot_data
+from convert_to_mimickit import convert_solvers_to_pkl
 
 # -------------------- Runtime flags -----------------------------------------
 WITHDISPLAY = "display" in sys.argv or "CROCODDYL_DISPLAY" in os.environ
@@ -63,6 +64,7 @@ pinocchio.updateFramePlacements(model, data)
 z_RF = data.oMf[model.getFrameId(right_foot_name)].translation[2]
 z_LF = data.oMf[model.getFrameId(left_foot_name)].translation[2]
 q0[2] -= 0.5 * (z_RF + z_LF)
+q0[2] +=0.1585
 
 # Store reference configuration
 model.referenceConfigurations["half_sitting"] = q0.copy()
@@ -79,10 +81,10 @@ gait = SimpleBipedGaitProblem(model, rightFoot, leftFoot)
 GAITPHASES = [
     dict(
         walking=dict(
-            stepX        = 0.05,
+            stepX        = 0.2,
             stepY        = 0.0,
             stepYaw      = 0.0,
-            stepHeight   = 0.05,
+            stepHeight   = 0.15,
             timeStep     = TIMESTEP,
             stepKnots    = 60,  # * TIMESTEP = SSP Duration
             supportKnots = 20,  # * TIMESTEP = DSP Duration
@@ -129,9 +131,17 @@ for phase in GAITPHASES:
                                              
     solver.append(ddp)                                      # Stores the solved ddp solver in the list for later use.
     
-    x0 = ddp.xs[-1]                                         # Updates x0 to be the final state of the current phase. 
+    # x0 = ddp.xs[-1]                                         # Updates x0 to be the final state of the current phase. 
                                                             # This becomes the starting point for the next phase (to ensure continuity between motions).
-    
+    q_final = ddp.xs[-1][:model.nq]
+    x0 = np.concatenate([q_final, np.zeros(model.nv)])
+
+convert_solvers_to_pkl(
+    solver_list = solver,
+    model       = model,
+    output_path = "data/motions/tocabi_walk.pkl",
+    timestep    = TIMESTEP,
+)
 
 # ----------------------------------------------------------
 # Visualization
