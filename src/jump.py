@@ -4,14 +4,17 @@ from pinocchio.robot_wrapper import RobotWrapper
 from utils.custom_biped import SimpleBipedGaitProblem, plotSolution
 # from crocoddyl.utils.biped import SimpleBipedGaitProblem, plotSolution
 from crocoddyl import MeshcatDisplay
+from convert_to_mimickit import convert_solvers_to_pkl
 
 # -------------------- Runtime flags -----------------------------------------
 WITHDISPLAY = "display" in sys.argv or "CROCODDYL_DISPLAY" in os.environ
 WITHPLOT    = "plot"    in sys.argv or "CROCODDYL_PLOT"    in os.environ
+WITHSAVE    = "save"    in sys.argv or "CROCODDYL_SAVE"    in os.environ
+
 signal.signal(signal.SIGINT, signal.SIG_DFL)
 
 # -------------------- Paths --------------------------------------------------
-TIMESTEP  = 0.05
+TIMESTEP  = 1.0/100.0
 BASE_DIR    = os.path.dirname(os.path.abspath(__file__))
 CONFIG_PATH = os.path.join(BASE_DIR, "../config/robot_configs.yaml")
 
@@ -62,11 +65,7 @@ z_RF = data.oMf[model.getFrameId(right_foot_name)].translation[2]
 z_LF = data.oMf[model.getFrameId(left_foot_name)].translation[2]
 z0   = 0.5 * (z_RF + z_LF)
 q0[2] -= z0
-<<<<<<< HEAD
-
-=======
 q0[2] +=0.1625
->>>>>>> 4af7608 (Stabilized landing-foot height)
 model.referenceConfigurations["half_sitting"] = q0.copy()
 
 v0 = np.zeros(model.nv)
@@ -86,8 +85,8 @@ GAITPHASES = [
             "stepYaw":      0.0,
             "stepHeight":   0.1,
             "timeStep":     TIMESTEP,
-            "stepKnots":    15,
-            "supportKnots": 5,
+            "stepKnots":    60,
+            "supportKnots": 30,
         }
     },
     {
@@ -95,8 +94,8 @@ GAITPHASES = [
             "jumpHeight":   0.1,
             "jumpLength":   [0.3, 0.0, 0.0],
             "timeStep":     TIMESTEP,
-            "groundKnots":  9,
-            "flyingKnots":  6,
+            "groundKnots":  50,
+            "flyingKnots":  20,
         }
     },
     {
@@ -106,8 +105,8 @@ GAITPHASES = [
             "stepYaw":      0.0,
             "stepHeight":   0.1,
             "timeStep":     TIMESTEP,
-            "stepKnots":    15,
-            "supportKnots": 5,
+            "stepKnots":    60,
+            "supportKnots": 30,
         }
     },
 ]
@@ -156,10 +155,17 @@ for i, phase in enumerate(GAITPHASES):
     xs = [x0] * (solver[i].problem.T + 1)
     us = solver[i].problem.quasiStatic([x0] * solver[i].problem.T)
     solver[i].solve(xs, us, 100, False)
-
+    q_final = solver[i].xs[-1][:model.nq]
+    v_zero  = np.zeros(model.nv)
+    x0 = np.concatenate([q_final, v_zero])
     # Defining the final state as initial one for the next phase
-    x0 = solver[i].xs[-1]
-
+    # x0 = solver[i].xs[-1]
+convert_solvers_to_pkl(
+    solver_list = solver,
+    model       = model,
+    output_path = "data/motions/tocabi_walk_jump.pkl",
+    timestep    = TIMESTEP,
+)
 # ----------------------------------------------------------
 # 5) Meshcat visualization
 if WITHDISPLAY:
@@ -188,3 +194,45 @@ if WITHPLOT:
             figIndex=i + 3,
             show=(i == len(solver) - 1),
         )
+if WITHSAVE:
+    SAVE_DIR = "./jumping_dataset"
+    os.makedirs(SAVE_DIR, exist_ok=True)
+
+    all_q = []   # joint positions (full q)
+    all_v = []   # joint velocities (full v)
+    all_u = []   # torques (actuated)
+
+    nu = model.nv - 6       
+    nv = model.nv
+    nq = model.nq
+
+    for ddp in solver:
+        T = len(ddp.us)      
+
+        for k in range(T):
+            x = ddp.xs[k]           
+            u = ddp.us[k]         
+
+            q = x[:nq].copy()
+            v = x[nq:].copy()
+            
+            if u.size == 0:
+                u_full = np.zeros(nu)
+            elif u.size == nu:
+                u_full = u.copy()
+            else:
+                raise RuntimeError(f"Unexpected control size: {u.size}, expected {nu}")
+            
+            all_q.append(q)
+            all_v.append(v)
+            all_u.append(u_full)
+
+    all_q = np.array(all_q)
+    all_v = np.array(all_v)
+    all_u = np.array(all_u)
+
+    np.savetxt(os.path.join(SAVE_DIR, "q_traj.txt"), all_q, fmt="%.6f")
+    np.savetxt(os.path.join(SAVE_DIR, "v_traj.txt"), all_v, fmt="%.6f")
+    np.savetxt(os.path.join(SAVE_DIR, "u_traj.txt"), all_u, fmt="%.6f")
+
+    print(f"[SAVE] Saved q, v, u trajectories to {SAVE_DIR}")

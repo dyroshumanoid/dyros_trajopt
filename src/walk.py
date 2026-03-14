@@ -3,6 +3,8 @@ import yaml
 from pinocchio.robot_wrapper import RobotWrapper
 from crocoddyl import MeshcatDisplay
 from utils.custom_biped import SimpleBipedGaitProblem, plotSolution
+from utils.analysis_util import save_and_plot_robot_data
+from convert_to_mimickit import convert_solvers_to_pkl
 
 # -------------------- Runtime flags -----------------------------------------
 WITHDISPLAY = "display" in sys.argv or "CROCODDYL_DISPLAY" in os.environ
@@ -62,11 +64,7 @@ pinocchio.updateFramePlacements(model, data)
 z_RF = data.oMf[model.getFrameId(right_foot_name)].translation[2]
 z_LF = data.oMf[model.getFrameId(left_foot_name)].translation[2]
 q0[2] -= 0.5 * (z_RF + z_LF)
-<<<<<<< HEAD
-=======
 q0[2] +=0.1625
->>>>>>> 4af7608 (Stabilized landing-foot height)
-
 # Store reference configuration
 model.referenceConfigurations["half_sitting"] = q0.copy()
 
@@ -82,10 +80,10 @@ gait = SimpleBipedGaitProblem(model, rightFoot, leftFoot)
 GAITPHASES = [
     dict(
         walking=dict(
-            stepX        = 0.05,
+            stepX        = 0.2,
             stepY        = 0.0,
             stepYaw      = 0.0,
-            stepHeight   = 0.05,
+            stepHeight   = 0.15,
             timeStep     = TIMESTEP,
             stepKnots    = 60,  # * TIMESTEP = SSP Duration
             supportKnots = 20,  # * TIMESTEP = DSP Duration
@@ -132,9 +130,17 @@ for phase in GAITPHASES:
                                              
     solver.append(ddp)                                      # Stores the solved ddp solver in the list for later use.
     
-    x0 = ddp.xs[-1]                                         # Updates x0 to be the final state of the current phase. 
+    # x0 = ddp.xs[-1]                                         # Updates x0 to be the final state of the current phase. 
                                                             # This becomes the starting point for the next phase (to ensure continuity between motions).
-    
+    q_final = ddp.xs[-1][:model.nq]
+    x0 = np.concatenate([q_final, np.zeros(model.nv)])
+
+convert_solvers_to_pkl(
+    solver_list = solver,
+    model       = model,
+    output_path = "data/motions/tocabi_walk.pkl",
+    timestep    = TIMESTEP,
+)
 
 # ----------------------------------------------------------
 # Visualization
@@ -152,58 +158,91 @@ if WITHDISPLAY:
 
 # ----------------------------------------------------------
 # Plot
-if WITHPLOT:
-    plotSolution(solver, bounds=False, figIndex=1, show=False)
+if WITHPLOT or WITHSAVE:
+    print(f"\n[Analysis] Processing data for {robot_name}...")
+    
+    xs_all = []
+    us_all = []
+    
     for i, ddp in enumerate(solver):
-        log = ddp.getCallbacks()[1]
-        crocoddyl.plotConvergence(
-            log.costs, log.pregs, log.dregs, log.grads,
-            log.stops, log.steps,
-            figTitle=f"walking (phase {i})", figIndex=i + 3,
-            show=(i == len(solver) - 1),
-        )
+        # 마지막 phase가 아니면 중복 방지를 위해 마지막 x를 제외하고 합침
+        if i < len(solver) - 1:
+            xs_all.extend(list(ddp.xs)[:-1])
+        else:
+            xs_all.extend(list(ddp.xs))
+        
+        # u(토크) 데이터 정리
+        for u in ddp.us:
+            if u.size == 0: # 혹시 제어량이 없는 노드가 있다면 0으로 채움
+                us_all.append(np.zeros(model.nv - 6))
+            else:
+                us_all.append(u)
+
+    # 리스트를 numpy array로 변환
+    xs_all = np.array(xs_all)
+    us_all = np.array(us_all)
+
+    # 기존 backflip 코드에서 썼던 함수 그대로 호출
+    # 이 함수가 내부적으로 관절 12개(혹은 그 이상)의 q, v, u를 각각 plot하고 저장합니다.
+    save_and_plot_robot_data(
+        model=model,
+        xs=xs_all,
+        us=us_all,
+        dt=TIMESTEP,
+        robot_name=robot_name
+    )
+# if WITHPLOT:
+#     plotSolution(solver, bounds=False, figIndex=1, show=False)
+#     for i, ddp in enumerate(solver):
+#         log = ddp.getCallbacks()[1]
+#         crocoddyl.plotConvergence(
+#             log.costs, log.pregs, log.dregs, log.grads,
+#             log.stops, log.steps,
+#             figTitle=f"walking (phase {i})", figIndex=i + 3,
+#             show=(i == len(solver) - 1),
+#         )
 
 #----------------------------------------------------------
 # Save
-if WITHSAVE:
-    SAVE_DIR = "./walking_dataset"
-    os.makedirs(SAVE_DIR, exist_ok=True)
+# if WITHSAVE:
+#     SAVE_DIR = "./walking_dataset"
+#     os.makedirs(SAVE_DIR, exist_ok=True)
 
-    all_q = []   # joint positions (full q)
-    all_v = []   # joint velocities (full v)
-    all_u = []   # torques (actuated)
+#     all_q = []   # joint positions (full q)
+#     all_v = []   # joint velocities (full v)
+#     all_u = []   # torques (actuated)
 
-    nu = model.nv - 6       
-    nv = model.nv
-    nq = model.nq
+#     nu = model.nv - 6       
+#     nv = model.nv
+#     nq = model.nq
 
-    for ddp in solver:
-        T = len(ddp.us)      
+#     for ddp in solver:
+#         T = len(ddp.us)      
 
-        for k in range(T):
-            x = ddp.xs[k]           
-            u = ddp.us[k]         
+#         for k in range(T):
+#             x = ddp.xs[k]           
+#             u = ddp.us[k]         
 
-            q = x[:nq].copy()
-            v = x[nq:].copy()
+#             q = x[:nq].copy()
+#             v = x[nq:].copy()
             
-            if u.size == 0:
-                u_full = np.zeros(nu)
-            elif u.size == nu:
-                u_full = u.copy()
-            else:
-                raise RuntimeError(f"Unexpected control size: {u.size}, expected {nu}")
+#             if u.size == 0:
+#                 u_full = np.zeros(nu)
+#             elif u.size == nu:
+#                 u_full = u.copy()
+#             else:
+#                 raise RuntimeError(f"Unexpected control size: {u.size}, expected {nu}")
             
-            all_q.append(q)
-            all_v.append(v)
-            all_u.append(u_full)
+#             all_q.append(q)
+#             all_v.append(v)
+#             all_u.append(u_full)
 
-    all_q = np.array(all_q)
-    all_v = np.array(all_v)
-    all_u = np.array(all_u)
+#     all_q = np.array(all_q)
+#     all_v = np.array(all_v)
+#     all_u = np.array(all_u)
 
-    np.savetxt(os.path.join(SAVE_DIR, "q_traj.txt"), all_q, fmt="%.6f")
-    np.savetxt(os.path.join(SAVE_DIR, "v_traj.txt"), all_v, fmt="%.6f")
-    np.savetxt(os.path.join(SAVE_DIR, "u_traj.txt"), all_u, fmt="%.6f")
+#     np.savetxt(os.path.join(SAVE_DIR, "q_traj.txt"), all_q, fmt="%.6f")
+#     np.savetxt(os.path.join(SAVE_DIR, "v_traj.txt"), all_v, fmt="%.6f")
+#     np.savetxt(os.path.join(SAVE_DIR, "u_traj.txt"), all_u, fmt="%.6f")
 
-    print(f"[SAVE] Saved q, v, u trajectories to {SAVE_DIR}")
+#     print(f"[SAVE] Saved q, v, u trajectories to {SAVE_DIR}")

@@ -148,9 +148,9 @@ class SimpleBipedGaitProblem:
         pinocchio.updateFramePlacements(self.rmodel, self.rdata)
         rfFootPos0 = self.rdata.oMf[self.rfId].translation
         lfFootPos0 = self.rdata.oMf[self.lfId].translation
-        df = jumpLength[2] - rfFootPos0[2]
-        rfFootPos0[2] = 0.0
-        lfFootPos0[2] = 0.0
+        df = jumpLength[2]
+        # rfFootPos0[2] = 0.0
+        # lfFootPos0[2] = 0.0
         comRef = (rfFootPos0 + lfFootPos0) / 2
         comRef[2] = pinocchio.centerOfMass(self.rmodel, self.rdata, q0)[2]
         # Create locomotion problem

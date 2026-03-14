@@ -166,6 +166,140 @@
     <joint name="LARM_SHOULDER_R" value="0.1" />
     <joint name="LARM_ELBOW"      value="-0.523599" />
   </group_state>
+  
+  <group_state name="side_sitting" group="all">
+    <joint name="root_joint"      value="0 0 0.85478727 0 0 0 1" />
+
+    <joint name="RLEG_HIP_R"      value="0" />
+    <joint name="RLEG_HIP_P"      value="-0.46" />
+    <joint name="RLEG_HIP_Y"      value="0" />
+    <joint name="RLEG_KNEE"       value="0.772665" />
+    <joint name="RLEG_ANKLE_P"    value="-0.248879" />
+    <joint name="RLEG_ANKLE_R"    value="0" />
+
+    <joint name="RARM_SHOULDER_P" value="0.17453" />
+    <joint name="RARM_SHOULDER_R" value="-0.1" />
+    <joint name="RARM_ELBOW"      value="-0.523599" />
+
+    <joint name="LLEG_HIP_R"      value="-0" />
+    <joint name="LLEG_HIP_P"      value="-0.46" />
+    <joint name="LLEG_HIP_Y"      value="0" />
+    <joint name="LLEG_KNEE"       value="0.772665" />
+    <joint name="LLEG_ANKLE_P"    value="-0.248879" />
+    <joint name="LLEG_ANKLE_R"    value="0" />
+
+    <joint name="LARM_SHOULDER_P" value="0.17453" />
+    <joint name="LARM_SHOULDER_R" value="0.1" />
+    <joint name="LARM_ELBOW"      value="-0.523599" />
+  </group_state>
+
+
+  <group_state name="side_takeoff" group="all">
+    <joint name="root_joint"      value="0 0 0.88478727 0 0 0 1" />
+
+    <joint name="RLEG_HIP_R"      value="0.14" />
+    <joint name="RLEG_HIP_P"      value="-0.47" />
+    <joint name="RLEG_HIP_Y"      value="0.0" />
+    <joint name="RLEG_KNEE"       value="0.69" />
+    <joint name="RLEG_ANKLE_P"    value="-0.29" />
+    <joint name="RLEG_ANKLE_R"    value="-0.14" />
+
+
+    <joint name="LLEG_HIP_R"      value="0.14" />
+    <joint name="LLEG_HIP_P"      value="-0.47" />
+    <joint name="LLEG_HIP_Y"      value="0" />
+    <joint name="LLEG_KNEE"       value="0.69" />
+    <joint name="LLEG_ANKLE_P"    value="-0.29" />
+    <joint name="LLEG_ANKLE_R"    value="-0.14" />
+
+    <joint name="RARM_SHOULDER_P" value="-0.22" />
+    <joint name="RARM_SHOULDER_R" value="-0.15" />
+    <joint name="RARM_ELBOW"      value="-0.45" />
+
+    <joint name="LARM_SHOULDER_P" value="-0.22" />
+    <joint name="LARM_SHOULDER_R" value="0.15" />
+    <joint name="LARM_ELBOW"      value="-0.45" />
+  </group_state>
+
+
+  <group_state name="side_flying" group="all">
+    <joint name="root_joint"      value="0 0 1.05478727 -0.7071 0 0 0.7071" />
+
+    <joint name="RLEG_HIP_R"      value="0.02" />
+    <joint name="RLEG_HIP_P"      value="-1.91" />
+    <joint name="RLEG_HIP_Y"      value="0.0" />
+    <joint name="RLEG_KNEE"       value="2.19" />
+    <joint name="RLEG_ANKLE_P"    value="-0.0" />
+    <joint name="RLEG_ANKLE_R"    value="0" />
+
+    <joint name="RARM_SHOULDER_P" value="0.20" />
+    <joint name="RARM_SHOULDER_R" value="0.05" />
+    <joint name="RARM_ELBOW"      value="-2.19" />
+
+    <joint name="LLEG_HIP_R"      value="-0.02" />
+    <joint name="LLEG_HIP_P"      value="-1.91" />
+    <joint name="LLEG_HIP_Y"      value="0" />
+    <joint name="LLEG_KNEE"       value="2.19" />
+    <joint name="LLEG_ANKLE_P"    value="-0.0" />
+    <joint name="LLEG_ANKLE_R"    value="0" />
+
+    <joint name="LARM_SHOULDER_P" value="0.20" />
+    <joint name="LARM_SHOULDER_R" value="-0.05" />
+    <joint name="LARM_ELBOW"      value="-2.19" />
+  </group_state>
+
+  <group_state name="side_inverse" group="all">
+    <joint name="root_joint"      value="0 0 0.95478727 1 0 0 0" />
+
+    <joint name="RLEG_HIP_R"      value="0.02" />
+    <joint name="RLEG_HIP_P"      value="-1.91" />
+    <joint name="RLEG_HIP_Y"      value="0.0" />
+    <joint name="RLEG_KNEE"       value="2.19" />
+    <joint name="RLEG_ANKLE_P"    value="-0.0" />
+    <joint name="RLEG_ANKLE_R"    value="0" />
+
+    <joint name="RARM_SHOULDER_P" value="0.20" />
+    <joint name="RARM_SHOULDER_R" value="0.05" />
+    <joint name="RARM_ELBOW"      value="-2.19" />
+
+    <joint name="LLEG_HIP_R"      value="-0.02" />
+    <joint name="LLEG_HIP_P"      value="-1.91" />
+    <joint name="LLEG_HIP_Y"      value="0" />
+    <joint name="LLEG_KNEE"       value="2.19" />
+    <joint name="LLEG_ANKLE_P"    value="-0.0" />
+    <joint name="LLEG_ANKLE_R"    value="0" />
+
+    <joint name="LARM_SHOULDER_P" value="0.20" />
+    <joint name="LARM_SHOULDER_R" value="-0.05" />
+    <joint name="LARM_ELBOW"      value="-2.19" />
+  </group_state>
+
+
+  <group_state name="side_landing" group="all">
+    <joint name="root_joint"      value="0 0 0.65 0 0 0 1" />
+
+    <joint name="RLEG_HIP_R"      value="0.00" />
+    <joint name="RLEG_HIP_P"      value="-1.34" />
+    <joint name="RLEG_HIP_Y"      value="0.0" />
+    <joint name="RLEG_KNEE"       value="1.87" />
+    <joint name="RLEG_ANKLE_P"    value="-0.51" />
+    <joint name="RLEG_ANKLE_R"    value="0" />
+
+    <joint name="LLEG_HIP_R"      value="0.00" />
+    <joint name="LLEG_HIP_P"      value="-1.34" />
+    <joint name="LLEG_HIP_Y"      value="0.0" />
+    <joint name="LLEG_KNEE"       value="1.87" />
+    <joint name="LLEG_ANKLE_P"    value="-0.51" />
+    <joint name="LLEG_ANKLE_R"    value="0" />
+
+    <joint name="RARM_SHOULDER_P" value="0.10" />
+    <joint name="RARM_SHOULDER_R" value="0.00" />
+    <joint name="RARM_ELBOW"      value="-1.00" />
+
+    <joint name="LARM_SHOULDER_P" value="0.10" />
+    <joint name="LARM_SHOULDER_R" value="0.00" />
+    <joint name="LARM_ELBOW"      value="-1.00" />
+  </group_state>
 
     <rotor_params>
         <joint name="LARM_SHOULDER_P" mass="0.0" gear_ratio="0.0" />
