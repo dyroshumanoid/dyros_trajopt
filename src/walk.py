@@ -60,13 +60,16 @@ else:
 data = model.createData()
 pinocchio.forwardKinematics(model, data, q0)
 pinocchio.updateFramePlacements(model, data)
+for i in range(model.nq):
+    print(f"q0[{i}] = {q0[i]:.4f}")
 
 z_RF = data.oMf[model.getFrameId(right_foot_name)].translation[2]
 z_LF = data.oMf[model.getFrameId(left_foot_name)].translation[2]
 q0[2] -= 0.5 * (z_RF + z_LF)
-q0[2] +=0.1625
+q0[2] +=0.0625
 # Store reference configuration
 model.referenceConfigurations["half_sitting"] = q0.copy()
+
 
 v0 = np.zeros(model.nv)
 x0 = np.concatenate([q0, v0])
@@ -138,7 +141,7 @@ for phase in GAITPHASES:
 convert_solvers_to_pkl(
     solver_list = solver,
     model       = model,
-    output_path = "data/motions/tocabi_walk.pkl",
+    output_path = "data/motions/p73_walk.pkl",
     timestep    = TIMESTEP,
 )
 

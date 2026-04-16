@@ -2,7 +2,7 @@
 convert_to_mimickit.py
 ======================
 Convert Crocoddyl solver output (pinocchio states) to a MimicKit-compatible
-.pkl motion file for the DYROS p73 v2 humanoid robot.
+.pkl motion file for the DYROS TOCABI v2 humanoid robot.
 
 MimicKit frame format (per frame):
     [root_pos (3), root_rot_expmap (3), joint_angles (33)]
@@ -10,7 +10,8 @@ MimicKit frame format (per frame):
 
 Pinocchio free-flyer q layout:
     q = [x, y, z, qx, qy, qz, qw, joint_angles...]
-         0  1  2   3   4   5   6   7 ..
+         0  1  2   3   4   5   6   7 ...
+
 Usage:
     from convert_to_mimickit import convert_solvers_to_pkl
     convert_solvers_to_pkl(solver, model, "data/motions/out.pkl", timestep=TIMESTEP)
@@ -41,29 +42,63 @@ def quat_to_expmap(qxyzw: np.ndarray) -> np.ndarray:
     return axis * angle
 
 
+# ---------------------------------------------------------------------------
+# TOCABI joint order -- confirmed from actual pinocchio model output.
+#
+# Pinocchio parsed this URDF with L leg before R leg, and placed
+# Neck/Head between the L arm and R arm chains. This is the authoritative
+# order and must not be changed.
+#
+# Total actuated joints: 6+6+3+8+2+8 = 33
+#   model.nq = 7 (freeflyer) + 33 = 40
+#   model.nv = 6 (freeflyer) + 33 = 39
+#   frame_dim = 3 + 3 + 33 = 39
+# ---------------------------------------------------------------------------
 
-
-P73_JOINT_DOF = [
-    # Left leg (6) -- pinocchio places L before R for this URDF
+TOCABI_JOINT_DOF = [
+    # left leg (6)  -- pinocchio places L before R for this URDF
+    ("L_HipYaw_Joint",      1),
     ("L_HipRoll_Joint",     1),
     ("L_HipPitch_Joint",    1),
-    ("L_HipYaw_Joint",      1),
     ("L_Knee_Joint",        1),
     ("L_AnklePitch_Joint",  1),
     ("L_AnkleRoll_Joint",   1),
-    # Right leg (6)
+    # right leg (6)
+    ("R_HipYaw_Joint",      1),
     ("R_HipRoll_Joint",     1),
     ("R_HipPitch_Joint",    1),
-    ("R_HipYaw_Joint",      1),
     ("R_Knee_Joint",        1),
     ("R_AnklePitch_Joint",  1),
     ("R_AnkleRoll_Joint",   1),
-    # Waist (1) -- placed LAST by pinocchio
-    ("WaistYaw_Joint",      1),
+    # torso (3)
+    ("Waist1_Joint",        1),
+    ("Waist2_Joint",        1),
+    ("Upperbody_Joint",     1),
+    # left arm (8)
+    ("L_Shoulder1_Joint",   1),
+    ("L_Shoulder2_Joint",   1),
+    ("L_Shoulder3_Joint",   1),
+    ("L_Armlink_Joint",     1),
+    ("L_Elbow_Joint",       1),
+    ("L_Forearm_Joint",     1),
+    ("L_Wrist1_Joint",      1),
+    ("L_Wrist2_Joint",      1),
+    # head (2) -- pinocchio places Neck/Head after L arm, before R arm
+    ("Neck_Joint",          1),
+    ("Head_Joint",          1),
+    # right arm (8)
+    ("R_Shoulder1_Joint",   1),
+    ("R_Shoulder2_Joint",   1),
+    ("R_Shoulder3_Joint",   1),
+    ("R_Armlink_Joint",     1),
+    ("R_Elbow_Joint",       1),
+    ("R_Forearm_Joint",     1),
+    ("R_Wrist1_Joint",      1),
+    ("R_Wrist2_Joint",      1),
 ]
 
-P73_N_JOINTS  = len(P73_JOINT_DOF)      # 13
-P73_FRAME_DIM = 3 + 3 + P73_N_JOINTS   # 19
+TOCABI_N_JOINTS  = len(TOCABI_JOINT_DOF)        # 33
+TOCABI_FRAME_DIM = 3 + 3 + TOCABI_N_JOINTS      # 39
 
 
 # ---------------------------------------------------------------------------
@@ -73,7 +108,7 @@ P73_FRAME_DIM = 3 + 3 + P73_N_JOINTS   # 19
 def verify_joint_order(model, expected_dof_list=None) -> list:
     """
     Build the dof_list from the pinocchio model's actual joint order.
-    If expected_dof_list is provided (e.g. p73_JOINT_DOF), also cross-check
+    If expected_dof_list is provided (e.g. TOCABI_JOINT_DOF), also cross-check
     names and dofs against it and raise ValueError on any mismatch.
 
     Returns dof_list derived from the model (use this for all subsequent conversions).
@@ -137,7 +172,7 @@ def q_to_mimickit_frame(q: np.ndarray, dof_list: list) -> np.ndarray:
     if idx != len(joint_q):
         raise ValueError(
             f"[q_to_frame] Consumed {idx} values but joint_q has {len(joint_q)}. "
-            "p73_JOINT_DOF does not match the loaded model."
+            "TOCABI_JOINT_DOF does not match the loaded model."
         )
 
     return np.concatenate([root_pos, root_rot, joint_angles])
@@ -159,7 +194,7 @@ def convert_solvers_to_pkl(
 
     Args:
         solver_list : list of crocoddyl.SolverXXX  (one entry per gait phase)
-        model       : pinocchio.Model  (free-flyer p73 model from main.py)
+        model       : pinocchio.Model  (free-flyer TOCABI model from main.py)
         output_path : destination .pkl path
         timestep    : simulation dt in seconds
         fps         : override fps; defaults to 1 / timestep
@@ -220,7 +255,7 @@ if __name__ == "__main__":
     import tempfile
     print("Standalone shape-check test...")
 
-    dummy = np.random.randn(60, P73_FRAME_DIM).astype(np.float32)
+    dummy = np.random.randn(60, TOCABI_FRAME_DIM).astype(np.float32)
 
     motion = Motion(
         loop_mode=LoopMode.CLAMP,
@@ -228,14 +263,14 @@ if __name__ == "__main__":
         frames=dummy,
     )
 
-    out = os.path.join(tempfile.gettempdir(), "test_p73.pkl")
+    out = os.path.join(tempfile.gettempdir(), "test_tocabi.pkl")
     motion.save(out)
 
     m = load_motion(out)
 
-    assert m.frames.shape == (60, P73_FRAME_DIM)
+    assert m.frames.shape == (60, TOCABI_FRAME_DIM)
     print(f"OK -- frames shape: {m.frames.shape}")
 
-    print(f"\nJoint order ({P73_N_JOINTS} joints, confirmed from runtime):")
-    for i, (name, dof) in enumerate(P73_JOINT_DOF):
+    print(f"\nJoint order ({TOCABI_N_JOINTS} joints, confirmed from runtime):")
+    for i, (name, dof) in enumerate(TOCABI_JOINT_DOF):
         print(f"  [{i:2d}] {name}")

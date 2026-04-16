@@ -1,0 +1,25 @@
+[0;1;32m●[0m systemd-resolved.service - Network Name Resolution
+     Loaded: loaded (/lib/systemd/system/systemd-resolved.service; enabled; vendor preset: enabled)
+     Active: [0;1;32mactive (running)[0m since Wed 2026-03-25 06:33:15 KST; 1 day 13h ago
+       Docs: man:systemd-resolved.service(8)
+             man:org.freedesktop.resolve1(5)
+             https://www.freedesktop.org/wiki/Software/systemd/writing-network-configuration-managers
+             https://www.freedesktop.org/wiki/Software/systemd/writing-resolver-clients
+   Main PID: 3309940 (systemd-resolve)
+     Status: "Processing requests..."
+      Tasks: 1 (limit: 74150)
+     Memory: 6.1M
+        CPU: 3.708s
+     CGroup: /system.slice/systemd-resolved.service
+             └─3309940 /lib/systemd/systemd-resolved
+
+Mar 26 11:59:30 dyros-MS-7D75 systemd-resolved[3309940]: wlx200bd04c12d9: Bus client set default route setting: yes
+Mar 26 11:59:30 dyros-MS-7D75 systemd-resolved[3309940]: wlx200bd04c12d9: Bus client set DNS server list to: 147.46.80.1, 147.46.37.10
+Mar 26 11:59:31 dyros-MS-7D75 systemd-resolved[3309940]: Flushed all caches.
+Mar 26 15:28:44 dyros-MS-7D75 systemd-resolved[3309940]: tailscale0: Bus client reset DNS server list.
+Mar 26 15:28:44 dyros-MS-7D75 systemd-resolved[3309940]: tailscale0: Bus client reset search domain list.
+Mar 26 15:28:44 dyros-MS-7D75 systemd-resolved[3309940]: tailscale0: Bus client set default route setting: yes
+Mar 26 15:28:44 dyros-MS-7D75 systemd-resolved[3309940]: Flushed all caches.
+Mar 26 19:57:38 dyros-MS-7D75 systemd-resolved[3309940]: Flushed all caches.
+Mar 26 19:57:38 dyros-MS-7D75 systemd-resolved[3309940]: Flushed all caches.
+Mar 26 19:57:47 dyros-MS-7D75 systemd-resolved[3309940]: Flushed all caches.

@@ -13,8 +13,9 @@ from utils.custom_biped import plotSolution
 
 # -------------------- Runtime flags -----------------------------------------
 WITHDISPLAY = "display" in sys.argv or "CROCODDYL_DISPLAY" in os.environ
-WITHPLOT    = "plot"    in sys.argv or "CROCODDYL_PLOT"    in os.environ
+WITHPLOT    = "plot"    in sys.argv or "CROCODDYwW}|_PLOT"    in os.environ
 signal.signal(signal.SIGINT, signal.SIG_DFL)
+
 
 # -------------------- Paths --------------------------------------------------
 TIMESTEP  = 0.01

@@ -53,6 +53,7 @@ class SimpleBipedGaitProblem:
         self.mu = 0.7
         self.Rsurf = np.eye(3)
         self.foot_dim = np.array([0.3, 0.23])
+        self.comHeight = None
 
     def createWalkingProblem(       
         self, x0, stepX, stepY, stepYaw, stepHeight, timeStep, stepKnots, supportKnots
@@ -80,6 +81,10 @@ class SimpleBipedGaitProblem:
         comRef = (rfPos0 + lfPos0) / 2                                          # Use the horizontal center between the two feet as CoM reference point
         comRef[2] = pinocchio.centerOfMass(self.rmodel, self.rdata, q0)[2]      # set z to real COM height
         
+        if self.comHeight is None:
+            self.comHeight=comRef[2]
+        else:
+            self.comHeight=self.comHeight
         # --- build list of action models --------------------------------------
         loco3dModel = []                                                        # will store all knots                  
         
@@ -140,6 +145,50 @@ class SimpleBipedGaitProblem:
         loco3dModel += doubleSupport + lStep
         return crocoddyl.ShootingProblem(x0, loco3dModel[:-1], loco3dModel[-1])
 
+    def createCrouchProblem(self, x0, timeStep, groundKnots, crouchName="crouch"):
+        q_crouch = self.rmodel.referenceConfigurations[crouchName].copy()
+        x_crouch = np.concatenate([q_crouch, np.zeros(self.rmodel.nv)])
+
+        # Standing reference (current state, zero velocity)
+        q0 = x0[: self.rmodel.nq]
+        x_stand = np.concatenate([q0, np.zeros(self.rmodel.nv)])
+
+        # Current foot positions for xy anchor and standing CoM z
+        pinocchio.forwardKinematics(self.rmodel, self.rdata, q0)
+        pinocchio.updateFramePlacements(self.rmodel, self.rdata)
+        rfFootPos0 = self.rdata.oMf[self.rfId].translation.copy()
+        lfFootPos0 = self.rdata.oMf[self.lfId].translation.copy()
+        footMid = (rfFootPos0 + lfFootPos0) / 2
+        com_stand_z = pinocchio.centerOfMass(self.rmodel, self.rdata, q0)[2]
+
+        # CoM z target in crouched reference (height above feet via FK)
+        pinocchio.forwardKinematics(self.rmodel, self.rdata, q_crouch)
+        pinocchio.updateFramePlacements(self.rmodel, self.rdata)
+        com_crouch = pinocchio.centerOfMass(self.rmodel, self.rdata, q_crouch).copy()
+        foot_z_crouch = (
+            self.rdata.oMf[self.rfId].translation[2]
+            + self.rdata.oMf[self.lfId].translation[2]
+        ) / 2
+        com_crouch_z = com_crouch[2] - foot_z_crouch
+
+        # Ramp reference linearly from standing -> crouched across all knots.
+        loco3dModel = []
+        for k in range(groundKnots):
+            alpha = (k + 1) / groundKnots
+            stateRef_k = (1.0 - alpha) * x_stand + alpha * x_crouch
+            comTarget_k = np.array([
+                footMid[0],
+                footMid[1],
+                com_stand_z + alpha * (com_crouch_z - com_stand_z),
+            ])
+            loco3dModel.append(
+                self.createSwingFootModel(
+                    timeStep, [self.lfId, self.rfId],
+                    comTask=comTarget_k, stateRef=stateRef_k,
+                )
+            )
+        return crocoddyl.ShootingProblem(x0, loco3dModel[:-1], loco3dModel[-1])
+
     def createJumpingProblem(
         self, x0, jumpHeight, jumpLength, timeStep, groundKnots, flyingKnots
     ):
@@ -149,17 +198,12 @@ class SimpleBipedGaitProblem:
         rfFootPos0 = self.rdata.oMf[self.rfId].translation
         lfFootPos0 = self.rdata.oMf[self.lfId].translation
         df = jumpLength[2]
-        # rfFootPos0[2] = 0.0
-        # lfFootPos0[2] = 0.0
         comRef = (rfFootPos0 + lfFootPos0) / 2
         comRef[2] = pinocchio.centerOfMass(self.rmodel, self.rdata, q0)[2]
         # Create locomotion problem
         loco3dModel = []
         takeOff = [
-            self.createSwingFootModel(
-                timeStep,
-                [self.lfId, self.rfId],
-            )
+            self.createSwingFootModel(timeStep, [self.lfId, self.rfId])
             for _ in range(groundKnots)
         ]
         flyingUpPhase = [
@@ -282,7 +326,7 @@ class SimpleBipedGaitProblem:
         return [*footSwingModel, footSwitchModel]
 
     def createSwingFootModel(
-        self, timeStep, supportFootIds, comTask=None, swingFootTask=None
+        self, timeStep, supportFootIds, comTask=None, swingFootTask=None, stateRef=None
     ):
         """Action model for a swing foot phase.
 
@@ -347,11 +391,12 @@ class SimpleBipedGaitProblem:
                     self.rmodel.frames[i[0]].name + "_footTrack", footTrack, 1e6
                 )
         stateWeights = np.array(
-            # [0] * 3 + [500.0] * 3 + [0.01] * (self.state.nv - 6) + [10] * self.state.nv
-            [0] * 3 + [1000.0] * 3 + [0.01] * (12) + [1000.0] * (self.state.nv - 18) + [10] * self.state.nv
+            # [0, 0, 700] + [500.0] * 3 + [0.01] * (self.state.nv - 6) + [10] * self.state.nv
+            [0,0,500] + [1000.0] * 3 + [250.0, 0.01, 0.01, 200.0, 0.01, 0.01, 250.0, 0.01, 0.01, 200.0, 0.01, 0.01] + [1000.0] * (self.state.nv - 18) + [10] * self.state.nv
         )
+        _stateRef = self.rmodel.defaultState if stateRef is None else stateRef
         stateResidual = crocoddyl.ResidualModelState(
-            self.state, self.rmodel.defaultState, nu
+            self.state, _stateRef, nu
         )
         stateActivation = crocoddyl.ActivationModelWeightedQuad(stateWeights**2)
         stateReg = crocoddyl.CostModelResidual(

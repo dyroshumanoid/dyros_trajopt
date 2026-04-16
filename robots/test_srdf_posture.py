@@ -17,8 +17,8 @@ else:
     # TODO: Set this to your actual dyros_tocabi_v2 URDF path
     # Example:
     # URDF_PATH = "/home/kwan/dyros_trajopt/robots/dyros_tocabi_v2/dyros_tocabi_v2.urdf"
-    URDF_PATH = "./tocabi/urdf/dyros_tocabi.urdf"
-    # URDF_PATH = "./p73/urdf/p73.urdf"
+    # URDF_PATH = "./tocabi/urdf/dyros_tocabi.urdf"
+    URDF_PATH = "./p73/urdf/p73.urdf"
     # URDF_PATH = "./simple_humanoid/urdf/simple_humanoid.urdf"
 
 
@@ -53,6 +53,7 @@ print("========== MODEL INFO ==========")
 print("nq:", model.nq)
 print("nv:", model.nv)
 
+
 # ============ Load SRDF reference configurations ============================
 pinocchio.loadReferenceConfigurations(model, SRDF_PATH)
 print("========== REFERENCE CONFIGURATIONS ==========")
@@ -62,11 +63,11 @@ print(ref_names)
 
 # Postures we want to test
 posture_names = [
-    # "half_sitting",
+    "half_sitting",
     # "flying_ready",
     # "flying_takeoff",
     # "flying",
-    "flying_land",
+    # "flying_land",
     # "side_sitting",
     # "side_takeoff",
     # "side_flying",

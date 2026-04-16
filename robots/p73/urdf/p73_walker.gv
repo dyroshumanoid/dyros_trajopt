@@ -1,0 +1,47 @@
+digraph G {
+node [shape=box];
+"world" [label="world"];
+"base_link" [label="base_link"];
+"L_HipRoll_Link" [label="L_HipRoll_Link"];
+"L_HipPitch_Link" [label="L_HipPitch_Link"];
+"L_Thigh_Link" [label="L_Thigh_Link"];
+"L_Knee_Link" [label="L_Knee_Link"];
+"L_AnkleRoll_Link" [label="L_AnkleRoll_Link"];
+"L_Foot_Link" [label="L_Foot_Link"];
+"R_HipRoll_Link" [label="R_HipRoll_Link"];
+"R_HipPitch_Link" [label="R_HipPitch_Link"];
+"R_Thigh_Link" [label="R_Thigh_Link"];
+"R_Knee_Link" [label="R_Knee_Link"];
+"R_AnkleRoll_Link" [label="R_AnkleRoll_Link"];
+"R_Foot_Link" [label="R_Foot_Link"];
+"WaistYaw_Link" [label="WaistYaw_Link"];
+node [shape=ellipse, color=blue, fontcolor=blue];
+"world" -> "world_to_base" [label="xyz: 0 0 0 \nrpy: 0 -0 0"]
+"world_to_base" -> "base_link"
+"base_link" -> "L_HipRoll_Joint" [label="xyz: -0.0155 0 0 \nrpy: 0 -0 0"]
+"L_HipRoll_Joint" -> "L_HipRoll_Link"
+"L_HipRoll_Link" -> "L_HipPitch_Joint" [label="xyz: 0.0155 0.0805 0 \nrpy: 0 -0 0"]
+"L_HipPitch_Joint" -> "L_HipPitch_Link"
+"L_HipPitch_Link" -> "L_HipYaw_Joint" [label="xyz: 0 0.04 -0.202 \nrpy: 0 -0 0"]
+"L_HipYaw_Joint" -> "L_Thigh_Link"
+"L_Thigh_Link" -> "L_Knee_Joint" [label="xyz: -0.042753 -0.0195 -0.198462 \nrpy: 0 -0 0"]
+"L_Knee_Joint" -> "L_Knee_Link"
+"L_Knee_Link" -> "L_AnklePitch_Joint" [label="xyz: 0.043642 -0.0025 -0.415855 \nrpy: 0 -0 0"]
+"L_AnklePitch_Joint" -> "L_AnkleRoll_Link"
+"L_AnkleRoll_Link" -> "L_AnkleRoll_Joint" [label="xyz: 0.011 0.0235 0 \nrpy: 0 -0 0"]
+"L_AnkleRoll_Joint" -> "L_Foot_Link"
+"base_link" -> "R_HipRoll_Joint" [label="xyz: 0.0155 0 0 \nrpy: 0 -0 0"]
+"R_HipRoll_Joint" -> "R_HipRoll_Link"
+"R_HipRoll_Link" -> "R_HipPitch_Joint" [label="xyz: -0.0155 -0.0805 0 \nrpy: 0 -0 0"]
+"R_HipPitch_Joint" -> "R_HipPitch_Link"
+"R_HipPitch_Link" -> "R_HipYaw_Joint" [label="xyz: 0 -0.04 -0.202 \nrpy: 0 -0 0"]
+"R_HipYaw_Joint" -> "R_Thigh_Link"
+"R_Thigh_Link" -> "R_Knee_Joint" [label="xyz: -0.042753 0.0195 -0.198462 \nrpy: 0 -0 0"]
+"R_Knee_Joint" -> "R_Knee_Link"
+"R_Knee_Link" -> "R_AnklePitch_Joint" [label="xyz: 0.043642 0.0025 -0.415855 \nrpy: 0 -0 0"]
+"R_AnklePitch_Joint" -> "R_AnkleRoll_Link"
+"R_AnkleRoll_Link" -> "R_AnkleRoll_Joint" [label="xyz: 0.011 -0.0235 0 \nrpy: 0 -0 0"]
+"R_AnkleRoll_Joint" -> "R_Foot_Link"
+"base_link" -> "WaistYaw_Joint" [label="xyz: 0 0 0.0955 \nrpy: 0 -0 0"]
+"WaistYaw_Joint" -> "WaistYaw_Link"
+}

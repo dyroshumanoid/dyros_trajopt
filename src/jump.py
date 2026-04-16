@@ -39,6 +39,12 @@ robot = RobotWrapper.BuildFromURDF(
 model = robot.model
 model.effortLimit *= 1.0
 
+# Load SRDF reference configurations (e.g. "crouch") if available
+rel_srdf = robot_cfg.get("srdf", None)
+if rel_srdf:
+    SRDF_PATH = os.path.abspath(os.path.join(BASE_DIR, "..", rel_srdf))
+    pinocchio.loadReferenceConfigurations(model, SRDF_PATH, False)
+
 # Use foot frame names from YAML
 left_foot_name  = robot_cfg["left_foot"]
 right_foot_name = robot_cfg["right_foot"]
@@ -65,7 +71,8 @@ z_RF = data.oMf[model.getFrameId(right_foot_name)].translation[2]
 z_LF = data.oMf[model.getFrameId(left_foot_name)].translation[2]
 z0   = 0.5 * (z_RF + z_LF)
 q0[2] -= z0
-q0[2] +=0.1625
+# q0[2] +=0.1625
+q0[2] +=0.065
 model.referenceConfigurations["half_sitting"] = q0.copy()
 
 v0 = np.zeros(model.nv)
@@ -83,18 +90,25 @@ GAITPHASES = [
             "stepX":        0.3,
             "stepY":        0.0,
             "stepYaw":      0.0,
-            "stepHeight":   0.1,
+            "stepHeight":   0.3,
             "timeStep":     TIMESTEP,
             "stepKnots":    60,
             "supportKnots": 30,
         }
     },
     {
-        "jumping": {
-            "jumpHeight":   0.1,
-            "jumpLength":   [0.3, 0.0, 0.0],
+        "crouching": {
             "timeStep":     TIMESTEP,
-            "groundKnots":  50,
+            "groundKnots":  100,
+            "crouchName":   "crouch",
+        }
+    },
+    {
+        "jumping": {
+            "jumpHeight":   0.04,
+            "jumpLength":   [0.25, 0.0, 0.0],
+            "timeStep":     TIMESTEP,
+            "groundKnots":  5,
             "flyingKnots":  20,
         }
     },
@@ -103,7 +117,7 @@ GAITPHASES = [
             "stepX":        0.3,
             "stepY":        0.0,
             "stepYaw":      0.0,
-            "stepHeight":   0.1,
+            "stepHeight":   0.3,
             "timeStep":     TIMESTEP,
             "stepKnots":    60,
             "supportKnots": 30,
@@ -125,6 +139,13 @@ for i, phase in enumerate(GAITPHASES):
                 value["stepKnots"],
                 value["supportKnots"],
             )
+        elif key == "crouching":
+            problem = gait.createCrouchProblem(
+                x0,
+                value["timeStep"],
+                value["groundKnots"],
+                value.get("crouchName", "crouch"),
+            )
         elif key == "jumping":
             problem = gait.createJumpingProblem(
                 x0,
@@ -138,6 +159,7 @@ for i, phase in enumerate(GAITPHASES):
             raise ValueError(f"Unknown phase key: {key}")
 
         solver[i] = crocoddyl.SolverIntro(problem)
+        # solver[i] = crocoddyl.SolverBoxDDP(problem)
         solver[i].th_stop = 1e-7
 
     print(f"*** SOLVE {key} ***")
@@ -163,7 +185,7 @@ for i, phase in enumerate(GAITPHASES):
 convert_solvers_to_pkl(
     solver_list = solver,
     model       = model,
-    output_path = "data/motions/tocabi_walk_jump.pkl",
+    output_path = "data/motions/p73_walk_jump.pkl",
     timestep    = TIMESTEP,
 )
 # ----------------------------------------------------------
